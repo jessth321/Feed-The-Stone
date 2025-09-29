@@ -76,6 +76,11 @@ public class Chunk : MonoBehaviour
 			triangles[i] = i;
 			float oreType = 0f;
 
+			if (vertexData[i].terrainType < 0f)
+			{
+				Debug.Log("aha");
+			}
+
 			if (vertexData[i].terrainType > 1.0f && vertexData[i].terrainType <= 2.0f)
 			{
 
@@ -94,6 +99,8 @@ public class Chunk : MonoBehaviour
             {
 				vertTerrainTypes[i] = vertexData[i].terrainType;
 			}
+
+			
 
 
 			uvs[i] = new Vector2(oreType, vertTerrainTypes[i]);

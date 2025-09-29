@@ -4553,7 +4553,7 @@ Rigidbody:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 4
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 1
@@ -8567,11 +8567,22 @@ MonoBehaviour:
     radiusOuter: 10
     radiusBlend: 20
     connectedID1: 2
+    connectedID2: 3
+    connectedID3: 4
+    connectedID4: 0
+  - id: 2
+    position: {x: 110, y: -30, z: 60}
+    height: 20
+    heightBlend: 20
+    radius: 10
+    radiusOuter: 10
+    radiusBlend: 20
+    connectedID1: 3
     connectedID2: 0
     connectedID3: 0
     connectedID4: 0
-  - id: 2
-    position: {x: 200, y: 0, z: 0}
+  - id: 3
+    position: {x: -110, y: -30, z: 110}
     height: 20
     heightBlend: 20
     radius: 10
@@ -8581,7 +8592,29 @@ MonoBehaviour:
     connectedID2: 0
     connectedID3: 0
     connectedID4: 0
-  groundLevel: 1000
+  - id: 4
+    position: {x: -110, y: 30, z: -110}
+    height: 20
+    heightBlend: 20
+    radius: 10
+    radiusOuter: 10
+    radiusBlend: 20
+    connectedID1: 0
+    connectedID2: 0
+    connectedID3: 0
+    connectedID4: 0
+  - id: 4
+    position: {x: 110, y: -60, z: -110}
+    height: 20
+    heightBlend: 20
+    radius: 10
+    radiusOuter: 10
+    radiusBlend: 20
+    connectedID1: 4
+    connectedID2: 3
+    connectedID3: 2
+    connectedID4: 0
+  groundLevel: 1
   groundBlend: 24
   groundVariance: 1280
   ceiling: 250

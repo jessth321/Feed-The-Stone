@@ -194,9 +194,16 @@ public class MarchingCubes : MonoBehaviour
 
 
 			UpdateChunks();
-        }
+		}
+		if (Mathf.Abs(playerChunkPos.y - playerChunkPosition.y) > 1.25f)
+		{
+			playerChunkPos = new Vector3Int(playerChunkPos.x, ((int)(player.position.y + chunkSize / 2) / chunkSize), playerChunkPos.z);
+
+
+			UpdateChunks();
+		}
 		if (Mathf.Abs(playerChunkPos.z - playerChunkPosition.z) > 1.25f)
-        {
+		{
 			playerChunkPos = new Vector3Int(playerChunkPos.x, playerChunkPos.y, ((int)(player.position.z + chunkSize / 2) / chunkSize));
 
 
@@ -205,16 +212,16 @@ public class MarchingCubes : MonoBehaviour
 
 
 		//foreach ( Chunk chunk in chunks.Values)
-        //{
+		//{
 		//	if ((Vector3.ProjectOnPlane(chunk.coord - playerChunkPos, Vector3.up)).magnitude < chunkRenderDist * 0.5f)
-        //    {
+		//    {
 		//		chunk.meshCollider.enabled = true;
-        //    }
-        //    else
-        //    {
+		//    }
+		//    else
+		//    {
 		//		chunk.meshCollider.enabled = false;
 		//	}
-        //}
+		//}
 	}
 
 	int IndexFromCoord(int x, int y, int z)
@@ -388,7 +395,7 @@ public class MarchingCubes : MonoBehaviour
 		
 		foreach (Vector3Int coord in chunks.Keys)
 		{
-			if (Vector3.ProjectOnPlane(coord - playerChunkPos, Vector3.up).magnitude > chunkRenderDist)
+			if ((coord - playerChunkPos).magnitude > chunkRenderDist)
 			{
 				chunkCoordsToRemove.Add(coord);
 			}
@@ -441,7 +448,7 @@ public class MarchingCubes : MonoBehaviour
 				if (borderChunk.shouldGenerateToSides[i] && borderChunk.shouldGenerateToSides[i + 6] &&
 				!chunks.ContainsKey(bNewCoords[i]))
 				{
-					if (Vector3.ProjectOnPlane(bNewCoords[i] - tempPlayerChunkPos, Vector3.up).magnitude < chunkRenderDist)
+					if ((bNewCoords[i] - tempPlayerChunkPos).magnitude < chunkRenderDist)
 					{
 						Chunk newChunk = CreateChunk(bNewCoords[i]);
 						chunkQueue.Enqueue(newChunk);
@@ -503,7 +510,7 @@ public class MarchingCubes : MonoBehaviour
 					if (shouldGenerateToSides[i] && shouldGenerateToSides[i + 6] &&
 					!chunks.ContainsKey(newCoords[i]))
 					{
-						if (Vector3.ProjectOnPlane((newCoords[i] - tempPlayerChunkPos), Vector3.up).magnitude < chunkRenderDist)
+						if ((newCoords[i] - tempPlayerChunkPos).magnitude < chunkRenderDist)
 						{
 							Chunk newChunk = CreateChunk(newCoords[i]);
 							chunkQueue.Enqueue(newChunk);

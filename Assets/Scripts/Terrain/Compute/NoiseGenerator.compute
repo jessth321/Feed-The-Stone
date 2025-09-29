@@ -122,6 +122,19 @@ float angleBetween(float2 a, float2 b)
 	return acos(dotProduct);
 }
 
+float DistanceToLineSegment(float3 inPoint, float3 segmentStart, float3 segmentEnd)
+{
+    float3 segment = segmentEnd - segmentStart;
+    float3 toPoint = inPoint
+    -segmentStart;
+    
+    float t = dot(toPoint, segment) / dot(segment, segment);
+    t = clamp(t, 0.0, 1.0);
+    
+    float3 closestPoint = segmentStart + t * segment;
+    return distance(inPoint, closestPoint);
+}
+
 
 //float4 qmul(float4 q1, float4 q2)
 //{
@@ -147,11 +160,11 @@ PointData heightBlend(float3 pos, float value)
 	float3 worldPos = pos + chunkOffset;
 	
 	
-	float baseGroundHeight = 0;
+	//float baseGroundHeight = 0;
 	
-	float continentalness = 0;
+	//float continentalness = 0;
 	
-	float amp = 0.5;
+	//float amp = 0.5;
 	
 	//for (int j = 0; j < contOct; ++j)
 	//{
@@ -257,31 +270,31 @@ PointData heightBlend(float3 pos, float value)
 	
 	
 	
-	float squash = ((yPos - groundLevel) / (ceiling - groundLevel));
-	
-	if (yPos > groundLevel + (ceiling - groundLevel) * 0.5)
-	{
-		val = lerp(val, -1, smoothstep((yPos - (groundLevel + (ceiling - groundLevel) * 0.5)) / ((ceiling - groundLevel) * 0.5)));
-	}
-	if (yPos < groundLevel + (ceiling - groundLevel) * 0.5)
-	{
-		val = lerp(-1, val, smoothstep((yPos - groundLevel) / ((ceiling - groundLevel) * 0.5)));
-	}
-	
-	
-	if (yPos > ceiling)
-	{
-		val = -1;
-	}
-	if (yPos < groundLevel)
-	{
-		val = -1;
-	}
-	
-	if (yPos < 70)
-	{
-		//val = -1;
-	}
+	//float squash = ((yPos - groundLevel) / (ceiling - groundLevel));
+	//
+	//if (yPos > groundLevel + (ceiling - groundLevel) * 0.5)
+	//{
+	//	val = lerp(val, -1, smoothstep((yPos - (groundLevel + (ceiling - groundLevel) * 0.5)) / ((ceiling - groundLevel) * 0.5)));
+	//}
+	//if (yPos < groundLevel + (ceiling - groundLevel) * 0.5)
+	//{
+	//	val = lerp(-1, val, smoothstep((yPos - groundLevel) / ((ceiling - groundLevel) * 0.5)));
+	//}
+	//
+	//
+	//if (yPos > ceiling)
+	//{
+	//	val = -1;
+	//}
+	//if (yPos < groundLevel)
+	//{
+	//	val = -1;
+	//}
+	//
+	//if (yPos < 70)
+	//{
+	//	//val = -1;
+	//}
 	
 	
 	
@@ -303,11 +316,11 @@ PointData heightBlend(float3 pos, float value)
         float tempVal = val;
 		
 		
-        uint connectedIDs[4] = { rooms[n].connectedID1, rooms[n].connectedID2, rooms[n].connectedID3, rooms[n].connectedID4 };
+        //uint connectedIDs[4] = { rooms[n].connectedID1, rooms[n].connectedID2, rooms[n].connectedID3, rooms[n].connectedID4 };
 		
         if (abs(length(rooms[n].position.xz - worldPos.xz)) < rooms[n].radius + rooms[n].radiusBlend * 2 + rooms[n].radiusOuter)
         {
-            float distToRoomCenter = abs(length(rooms[n].position.xz - worldPos.xz));
+            float distToRoomCenter = length(rooms[n].position.xz - worldPos.xz);
             float roomGround = rooms[n].position.y;
             float roomCeiling = roomGround + rooms[n].height;
 			
@@ -321,14 +334,14 @@ PointData heightBlend(float3 pos, float value)
             }
             else if (distToRoomCenter < rooms[n].radius + rooms[n].radiusBlend) // middle blend radius
             {
-                tempVal = lerp(1, val, smoothstep((distToRoomCenter - rooms[n].radius) / rooms[n].radiusBlend));
+                tempVal = lerp(1, tempVal, smoothstep((distToRoomCenter - rooms[n].radius) / rooms[n].radiusBlend));
 				
                 roomCeiling = lerp(roomGround + 2 * rooms[n].height, roomGround + rooms[n].height, smoothstep((distToRoomCenter - rooms[n].radius) / rooms[n].radiusBlend));
                 
             }
             else if (distToRoomCenter > rooms[n].radius + rooms[n].radiusBlend + rooms[n].radiusOuter) // outer blend radius
             {
-                tempVal = lerp(val, -1, smoothstep((distToRoomCenter - rooms[n].radius - rooms[n].radiusBlend - rooms[n].radiusOuter) / rooms[n].radiusBlend));
+                tempVal = lerp(tempVal, -1, smoothstep((distToRoomCenter - rooms[n].radius - rooms[n].radiusBlend - rooms[n].radiusOuter) / rooms[n].radiusBlend));
             }
 			
 			
@@ -367,20 +380,12 @@ PointData heightBlend(float3 pos, float value)
 			
         }
 		
+
 		
-        for (uint u = 0; u < 4; u++)
-        {
-            uint connectedID = connectedIDs[u];
-			
-            if (connectedID != 0)
-            {
-				
-            }
-			
-			
-        }
 		
     }
+	
+		
 	
     if (!isCloseToARoom)
     {
@@ -406,6 +411,36 @@ PointData heightBlend(float3 pos, float value)
         val = roomValues[roomIndex];
 		
     }
+	
+	
+    for (uint p = 0; p < numRooms; p++)
+    {
+        float tempVal2 = value;
+		
+		
+        uint connectedIDs[4] = { rooms[p].connectedID1, rooms[p].connectedID2, rooms[p].connectedID3, rooms[p].connectedID4 };
+		
+        for (uint q = 0; q < 4; q++)
+        {
+            uint connectedID = connectedIDs[q];
+			
+            if (connectedID != (uint) 0)
+            {
+                float3 roomToRoomVector = normalize(rooms[connectedID - 1].position - rooms[p].position); // id must be its index plus 1
+                float3 roomToPosVector = normalize(worldPos - rooms[p].position);
+				
+                if (DistanceToLineSegment(worldPos, rooms[p].position + float3(0, rooms[p].height, 0) * 0.5, rooms[connectedID - 1].position + float3(0, rooms[connectedID - 1].height, 0) * 0.5) < 5)
+                {
+                    tempVal2 = 1;
+					
+                    val = tempVal2;
+                }
+				
+				
+            }
+        }
+    }
+	
 	
 	
 	
@@ -476,14 +511,14 @@ PointData heightBlend(float3 pos, float value)
 			
 			
 			float radiusNoise = 0;
-			amp = deformations[i].noiseAmp;
+			float amp = deformations[i].noiseAmp;
 			float radiusFreq = deformations[i].noiseFreq;
 			float radiusLac = deformations[i].noiseLac;
 			float radiusPers = deformations[i].noisePers;
 			
 			for (int j = 0; j < deformations[i].noiseOct; ++j)
 			{
-				radiusNoise += (snoise(((pos + chunkOffset) + deformationPos * 111.9715) * radiusFreq) + 1) * 0.5 * radius * amp;
+				radiusNoise += (snoise((worldPos + deformationPos * 111.9715) * radiusFreq) + 1) * 0.5 * radius * amp;
 				radiusFreq *= radiusLac;
 				amp *= radiusPers;
 			}
@@ -494,7 +529,7 @@ PointData heightBlend(float3 pos, float value)
 			float radiusBlend = deformations[i].blend;
 			radiusBlend *= 1.5 - (terrainType * 0.5);
 		
-			float dist = length(deformationPos - (pos + chunkOffset));
+			float dist = length(deformationPos - worldPos);
 			
 		
 			if (dist < radius)
@@ -518,15 +553,15 @@ PointData heightBlend(float3 pos, float value)
 	
 	
 	
-	float valueDifference = (preDeformedValue - val + 1);
-	
-	if (heightDifference > 0)
-	{
-		if (valueDifference > 0.95)
-		{
-			terrainType = clamp(lerp(0.999, 1.0, (valueDifference - 0.95) * 20), 0.999, 1);
-		}
-	}
+	//float valueDifference = (preDeformedValue - val + 1);
+	//
+	//if (heightDifference > 0)
+	//{
+	//	if (valueDifference > 0.95)
+	//	{
+	//		terrainType = clamp(lerp(0.999, 1.0, (valueDifference - 0.95) * 20), 0.999, 1);
+	//	}
+	//}
 	
 	//if (preDeformedValue < isoLevel - 0.1)
 	//{
@@ -553,7 +588,7 @@ PointData heightBlend(float3 pos, float value)
 	float originalType = terrainType;
 	
 	
-	if (terrainType < 0.9995 || terrainType > 1.0)
+	if (true)//terrainType < 0.9995 || terrainType > 1.0)
 	{
 		if (oreValue > 0.8)
 		{
@@ -668,7 +703,7 @@ PointData heightBlend(float3 pos, float value)
 [numthreads(8,8,8)]
 void NoiseGen (uint3 id : SV_DispatchThreadID)
 {
-	float value = 0.0;
+	float value = 0;
 	
 	
 	
