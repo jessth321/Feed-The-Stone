@@ -122,17 +122,24 @@ float angleBetween(float2 a, float2 b)
 	return acos(dotProduct);
 }
 
-float DistanceToLineSegment(float3 inPoint, float3 segmentStart, float3 segmentEnd)
+float3 ClosestPointLineSegment(float3 inPoint, float3 segmentStart, float3 segmentEnd)
 {
     float3 segment = segmentEnd - segmentStart;
-    float3 toPoint = inPoint
-    -segmentStart;
+    float3 toPoint = inPoint - segmentStart;
     
     float t = dot(toPoint, segment) / dot(segment, segment);
     t = clamp(t, 0.0, 1.0);
     
-    float3 closestPoint = segmentStart + t * segment;
-    return distance(inPoint, closestPoint);
+    return segmentStart + t * segment;
+}
+
+float3 ProjectVectorOnPlane(float3 inVector, float3 planeNormal)
+{
+    planeNormal = normalize(planeNormal);
+    
+    // Remove component parallel to normal (leaving only plane components)
+    float parallelComponent = dot(inVector, planeNormal);
+    return inVector - parallelComponent * planeNormal;
 }
 
 
@@ -318,7 +325,7 @@ PointData heightBlend(float3 pos, float value)
 		
         //uint connectedIDs[4] = { rooms[n].connectedID1, rooms[n].connectedID2, rooms[n].connectedID3, rooms[n].connectedID4 };
 		
-        if (abs(length(rooms[n].position.xz - worldPos.xz)) < rooms[n].radius + rooms[n].radiusBlend * 2 + rooms[n].radiusOuter)
+        if (abs(length(rooms[n].position.xyz - worldPos.xyz)) < rooms[n].radius + rooms[n].radiusBlend * 2 + rooms[n].radiusOuter)
         {
             float distToRoomCenter = length(rooms[n].position.xz - worldPos.xz);
             float roomGround = rooms[n].position.y;
@@ -327,7 +334,7 @@ PointData heightBlend(float3 pos, float value)
 			
             if (distToRoomCenter < rooms[n].radius) // Inner Radius
             {
-                tempVal = 1;
+                tempVal = 1;//lerp(1, tempVal, (yPos - rooms[n].position.y) / (rooms[n].radius + rooms[n].radiusBlend * 2 + rooms[n].radiusOuter));
 				
                 roomCeiling = roomGround + 2 * rooms[n].height;
 				
@@ -347,16 +354,23 @@ PointData heightBlend(float3 pos, float value)
 			
 			
 			
+            float roomMidPointY = (roomCeiling - roomGround) * 0.5;
 			
-			
-			
-            if (yPos > roomGround + (roomCeiling - roomGround) * 0.5)
+            if (roomMidPointY > 15)
             {
-                tempVal = lerp(tempVal, -1, smoothstep((yPos - (roomGround + (roomCeiling - roomGround) * 0.5)) / ((roomCeiling - roomGround) * 0.5)));
+                roomMidPointY = 15;
             }
-            if (yPos < roomGround + (roomCeiling - roomGround) * 0.5)
+				
+				
+			
+			
+            if (yPos > roomGround + roomMidPointY)
             {
-                tempVal = lerp(-1, tempVal, smoothstep((yPos - roomGround) / ((roomCeiling - roomGround) * 0.5)));
+                tempVal = lerp(tempVal, -1, smoothstep((yPos - (roomGround + roomMidPointY)) / ((roomCeiling- roomGround) - roomMidPointY)));
+            }
+            if (yPos < roomGround + roomMidPointY)
+            {
+                tempVal = lerp(-1, tempVal, smoothstep((yPos - roomGround) / (roomMidPointY)));
             }
 	
             if (yPos > roomCeiling && abs(yPos - roomCeiling) < 10)
@@ -376,7 +390,7 @@ PointData heightBlend(float3 pos, float value)
 			
             numValidRooms += 1;
             
-            val = tempVal;
+            //val = tempVal;
 			
         }
 		
@@ -415,7 +429,7 @@ PointData heightBlend(float3 pos, float value)
 	
     for (uint p = 0; p < numRooms; p++)
     {
-        float tempVal2 = value;
+        float tempVal2 = val;
 		
 		
         uint connectedIDs[4] = { rooms[p].connectedID1, rooms[p].connectedID2, rooms[p].connectedID3, rooms[p].connectedID4 };
@@ -427,16 +441,55 @@ PointData heightBlend(float3 pos, float value)
             if (connectedID != (uint) 0)
             {
                 float3 roomToRoomVector = normalize(rooms[connectedID - 1].position - rooms[p].position); // id must be its index plus 1
-                float3 roomToPosVector = normalize(worldPos - rooms[p].position);
+                float3 roomRadiusOffset1 = normalize(float3(roomToRoomVector.x, 0, roomToRoomVector.z)) * 0.85 * (rooms[p].radius + rooms[p].radiusBlend + rooms[p].radiusOuter) + float3(0, 15, 0);
+                float3 roomRadiusOffset2 = normalize(float3(-roomToRoomVector.x, 0, -roomToRoomVector.z)) * 0.85 * (rooms[connectedID - 1].radius + rooms[connectedID - 1].radiusBlend + rooms[connectedID - 1].radiusOuter) + float3(0, 15, 0);
+                //float3 roomToPosVector = normalize(worldPos - rooms[p].position);
+                float3 closestPoint = ClosestPointLineSegment(worldPos, rooms[p].position + roomRadiusOffset1, rooms[connectedID - 1].position + roomRadiusOffset2);
+				          
+                float distToEntrace = distance(closestPoint, rooms[p].position + roomRadiusOffset1);
+                if (distToEntrace > distance(closestPoint, rooms[connectedID - 1].position + roomRadiusOffset2))
+                {
+                    distToEntrace = distance(closestPoint, rooms[connectedID - 1].position + roomRadiusOffset2);
+                }
 				
-                if (DistanceToLineSegment(worldPos, rooms[p].position + float3(0, rooms[p].height, 0) * 0.5, rooms[connectedID - 1].position + float3(0, rooms[connectedID - 1].height, 0) * 0.5) < 5)
+                float3 tunnelNoiseOffset = float3(0, 0, 0);
+				float amp = 1;
+                float freq = 0.005;
+	
+				for (int j = 0; j < 8; ++j)
+				{
+                    tunnelNoiseOffset.x += (snoise((worldPos + seedOffset.xxx) * freq)) * amp;
+                    tunnelNoiseOffset.y += (snoise((worldPos + seedOffset.yyy) * freq)) * amp;
+                    tunnelNoiseOffset.z += (snoise((worldPos + seedOffset.zzz) * freq)) * amp;
+                    freq *= 1.8715;
+					amp *= 0.5;
+				}
+				
+                tunnelNoiseOffset = ProjectVectorOnPlane(tunnelNoiseOffset * float3(45, 15, 45), roomToRoomVector);
+				
+                if (distToEntrace < 30)
+                {
+                    tunnelNoiseOffset = float3(lerp(0, tunnelNoiseOffset.x, smoothstep(distToEntrace / 30.0)), lerp(0, tunnelNoiseOffset.y, smoothstep(distToEntrace / 30.0)), lerp(0, tunnelNoiseOffset.z, smoothstep(distToEntrace / 30.0)));
+                }
+				
+                closestPoint = closestPoint + tunnelNoiseOffset;
+				
+                float distToTunnelCenter = distance((closestPoint + snoise(seedOffset + worldPos * 0.05) * 0) * float3(1, 2, 1), worldPos * float3(1, 2, 1));
+				
+                //distToTunnelCenter += snoise(worldPos * 0.02) * 10;
+				
+                if (distToTunnelCenter < 10)
                 {
                     tempVal2 = 1;
 					
                     val = tempVal2;
                 }
-				
-				
+                else if (distToTunnelCenter < 25)
+                {
+                    tempVal2 = lerp(1, tempVal2, (distToTunnelCenter - 10) / 15);
+
+                    val = tempVal2;
+                }
             }
         }
     }

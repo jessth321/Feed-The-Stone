@@ -33,8 +33,8 @@ public class GameManager : MonoBehaviour
                 {
 					//Debug.Log("Collected");
 					pi.CollectItem(spawnedItems[i].GetComponent<Item>());
-					//Destroy(spawnedItems[i]);
 					spawnedItems[i].SetActive(false);
+					Destroy(spawnedItems[i]);
 					spawnedItems.RemoveAt(i);
                 }
             }

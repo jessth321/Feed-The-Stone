@@ -29,6 +29,7 @@ public class MarchingCubes : MonoBehaviour
 	public float amplitude;//= 1.0;
 
 	[Header("Rooms")]
+	public Transform RoomsContainer;
 	public RoomData[] rooms;
 
 	[Header("Height Settings")]
@@ -158,6 +159,19 @@ public class MarchingCubes : MonoBehaviour
 	// Start is called before the first frame update
 	void Start()
 	{
+		rooms = new RoomData[RoomsContainer.childCount];
+		for (int i = 0; i < RoomsContainer.childCount; i++)
+        {
+			Room room;
+			if (RoomsContainer.GetChild(i).TryGetComponent<Room>(out room))
+            {
+				rooms[i] = room.roomData;
+            }
+        }
+
+
+
+
 		Vector4[] evalList = new Vector4[heightEvaluationResolution];
 		
 		for (int i = 0; i < heightEvaluationResolution; i++)
@@ -186,27 +200,27 @@ public class MarchingCubes : MonoBehaviour
     void Update()
     {
 		Vector3 playerChunkPosition = new Vector3(((player.position.x + chunkSize / 2) / chunkSize), ((player.position.y + chunkSize / 2) / chunkSize), ((player.position.z + chunkSize / 2) / chunkSize));
-
-
+		
+		
 		if (Mathf.Abs(playerChunkPos.x - playerChunkPosition.x) > 1.25f)
 		{
 			playerChunkPos = new Vector3Int(((int)(player.position.x + chunkSize / 2) / chunkSize), playerChunkPos.y, playerChunkPos.z);
-
-
+		
+		
 			UpdateChunks();
 		}
 		if (Mathf.Abs(playerChunkPos.y - playerChunkPosition.y) > 1.25f)
 		{
 			playerChunkPos = new Vector3Int(playerChunkPos.x, ((int)(player.position.y + chunkSize / 2) / chunkSize), playerChunkPos.z);
-
-
+		
+		
 			UpdateChunks();
 		}
 		if (Mathf.Abs(playerChunkPos.z - playerChunkPosition.z) > 1.25f)
 		{
 			playerChunkPos = new Vector3Int(playerChunkPos.x, playerChunkPos.y, ((int)(player.position.z + chunkSize / 2) / chunkSize));
-
-
+		
+		
 			UpdateChunks();
 		}
 
@@ -453,7 +467,7 @@ public class MarchingCubes : MonoBehaviour
 						Chunk newChunk = CreateChunk(bNewCoords[i]);
 						chunkQueue.Enqueue(newChunk);
 						chunks.Add(bNewCoords[i], newChunk);
-						if ((newChunk.coord - tempPlayerChunkPos).magnitude > chunkRenderDist - 1.6f && !borderChunks.Contains(borderChunk))
+						if (ShouldBeBorderChunk(newChunk, tempPlayerChunkPos, newBorderChunks))
                         {
 							newBorderChunks.Add(newChunk);
                         }
@@ -515,7 +529,7 @@ public class MarchingCubes : MonoBehaviour
 							Chunk newChunk = CreateChunk(newCoords[i]);
 							chunkQueue.Enqueue(newChunk);
 							chunks.Add(newCoords[i], newChunk);
-							if ((newChunk.coord - tempPlayerChunkPos).magnitude > chunkRenderDist - 1.6f && !newBorderChunks.Contains(newChunk))
+							if (ShouldBeBorderChunk(newChunk, tempPlayerChunkPos, newBorderChunks))
                             {
 								newBorderChunks.Add(newChunk);
 							}
@@ -534,6 +548,12 @@ public class MarchingCubes : MonoBehaviour
 		}
 
 		borderChunks = newBorderChunks;
+	}
+
+	bool ShouldBeBorderChunk(Chunk chunk, Vector3Int playerChunkPosition, HashSet<Chunk> borderChunkSet)
+    {
+		return (chunk.coord - playerChunkPosition).magnitude > chunkRenderDist - 1.6f && !borderChunkSet.Contains(chunk);
+
 	}
 
 	void GenerateChunkDensity(Chunk chunk)
@@ -1042,6 +1062,11 @@ public class MarchingCubes : MonoBehaviour
 				{
 					chunkCoordDeformationDict[coord] = chunks[coord].deformations;
 				}
+
+				if (ShouldBeBorderChunk(chunks[coord], playerChunkPos, borderChunks))
+                {
+					borderChunks.Add(chunks[coord]);
+                }
 			}
 
 			//Vector3Int coord = intersectingChunk.coord;
