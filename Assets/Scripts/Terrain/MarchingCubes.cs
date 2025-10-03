@@ -166,6 +166,7 @@ public class MarchingCubes : MonoBehaviour
 			if (RoomsContainer.GetChild(i).TryGetComponent<Room>(out room))
             {
 				rooms[i] = room.roomData;
+				//Debug.Log(room.roomData.position);
             }
         }
 

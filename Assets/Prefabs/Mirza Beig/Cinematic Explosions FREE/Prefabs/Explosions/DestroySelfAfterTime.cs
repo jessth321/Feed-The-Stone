@@ -9,7 +9,7 @@ public class DestroySelfAfterTime : MonoBehaviour
 
     float timeElapsed;
     float initialIntensity;
-    new Light light;
+    Light light;
 
     void Start()
     {

@@ -8,5 +8,15 @@ public class Room : MonoBehaviour
     {
         roomData.id = (uint) transform.GetSiblingIndex() + 1;
         roomData.position = transform.position;
+
+
+    }
+
+    private void Start()
+    {
+        if (transform.parent.gameObject.activeInHierarchy)
+        {
+            transform.parent.gameObject.SetActive(false);
+        }
     }
 }
