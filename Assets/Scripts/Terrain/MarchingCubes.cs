@@ -12,6 +12,7 @@ public class MarchingCubes : MonoBehaviour
 	public Material terrainMaterial;
 	public int chunkSize;
 	public int chunkRenderDist = 10;
+	public int initChunkRenderDist = 10;
 
 	[Header("Frequencies")]
 	public float noiseFreq = 0.1f;
@@ -101,6 +102,8 @@ public class MarchingCubes : MonoBehaviour
 	public GameObject emptyChunkContainer;
 
 	List<Chunk> chunkPool = new List<Chunk>();
+	HashSet<Vector3Int> allChunks = new HashSet<Vector3Int>();
+	Queue<Chunk> chunkQueue = new Queue<Chunk>();
 
 	Dictionary<Vector3Int, Chunk> chunks = new Dictionary<Vector3Int, Chunk>();
 	HashSet<Chunk> borderChunks = new HashSet<Chunk>();
@@ -124,9 +127,10 @@ public class MarchingCubes : MonoBehaviour
 	Vector3Int playerChunkPos;
 
 	//public GameObject cloud;
-	public GameObject rock;
+	public GameObject geode;
 
-
+	bool isUpdatingChunks = false;
+	public static bool isInitializingChunks = false;
 
 	
 	struct Triangle
@@ -154,12 +158,19 @@ public class MarchingCubes : MonoBehaviour
 	}
 
 
-	
+    private void Awake()
+    {
 
-	// Start is called before the first frame update
-	void Start()
+		isInitializingChunks = true;
+	}
+
+    // Start is called before the first frame update
+    void Start()
 	{
+
 		rooms = new RoomData[RoomsContainer.childCount];
+
+
 		for (int i = 0; i < RoomsContainer.childCount; i++)
         {
 			Room room;
@@ -196,6 +207,9 @@ public class MarchingCubes : MonoBehaviour
 		playerChunkPos = new Vector3Int(((int)(player.position.x + chunkSize / 2) / chunkSize), ((int)(player.position.y + chunkSize / 2) / chunkSize), ((int)(player.position.z + chunkSize / 2) / chunkSize));
 		InitializeChunks();
 		//ChunkTest();
+
+
+		isInitializingChunks = false;
 	}
 
     void Update()
@@ -203,27 +217,39 @@ public class MarchingCubes : MonoBehaviour
 		Vector3 playerChunkPosition = new Vector3(((player.position.x + chunkSize / 2) / chunkSize), ((player.position.y + chunkSize / 2) / chunkSize), ((player.position.z + chunkSize / 2) / chunkSize));
 		
 		
-		if (Mathf.Abs(playerChunkPos.x - playerChunkPosition.x) > 1.25f)
-		{
-			playerChunkPos = new Vector3Int(((int)(player.position.x + chunkSize / 2) / chunkSize), playerChunkPos.y, playerChunkPos.z);
-		
-		
-			UpdateChunks();
+		if (!isUpdatingChunks)
+        {
+			//if (Mathf.Abs(playerChunkPos.x - playerChunkPosition.x) > 1.25f)
+			//{
+			//	playerChunkPos = new Vector3Int(((int)(player.position.x + chunkSize / 2) / chunkSize), playerChunkPos.y, playerChunkPos.z);
+			//
+			//
+			//	UpdateChunks();
+			//}
+			//else if (Mathf.Abs(playerChunkPos.y - playerChunkPosition.y) > 1.25f)
+			//{
+			//	playerChunkPos = new Vector3Int(playerChunkPos.x, ((int)(player.position.y + chunkSize / 2) / chunkSize), playerChunkPos.z);
+			//
+			//
+			//	UpdateChunks();
+			//}
+			//else if (Mathf.Abs(playerChunkPos.z - playerChunkPosition.z) > 1.25f)
+			//{
+			//	playerChunkPos = new Vector3Int(playerChunkPos.x, playerChunkPos.y, ((int)(player.position.z + chunkSize / 2) / chunkSize));
+			//
+			//
+			//	UpdateChunks();
+			//}
+
+			if (Mathf.Abs(playerChunkPos.x - playerChunkPosition.x) > 1.25f || Mathf.Abs(playerChunkPos.y - playerChunkPosition.y) > 1.25f || Mathf.Abs(playerChunkPos.z - playerChunkPosition.z) > 1.25f)
+			{
+				playerChunkPos = new Vector3Int(((int)(player.position.x + chunkSize / 2) / chunkSize), (int)(player.position.y + chunkSize / 2) / chunkSize, (int)(player.position.z + chunkSize / 2) / chunkSize);
+
+
+				UpdateChunks();
+			}
 		}
-		if (Mathf.Abs(playerChunkPos.y - playerChunkPosition.y) > 1.25f)
-		{
-			playerChunkPos = new Vector3Int(playerChunkPos.x, ((int)(player.position.y + chunkSize / 2) / chunkSize), playerChunkPos.z);
 		
-		
-			UpdateChunks();
-		}
-		if (Mathf.Abs(playerChunkPos.z - playerChunkPosition.z) > 1.25f)
-		{
-			playerChunkPos = new Vector3Int(playerChunkPos.x, playerChunkPos.y, ((int)(player.position.z + chunkSize / 2) / chunkSize));
-		
-		
-			UpdateChunks();
-		}
 
 
 		//foreach ( Chunk chunk in chunks.Values)
@@ -251,24 +277,24 @@ public class MarchingCubes : MonoBehaviour
 
 
 		// Make chunk pool
-		for (int z = -chunkRenderDist + playerChunkPos.z; z < chunkRenderDist + playerChunkPos.z; z++)
-		{
-			for (int x = -chunkRenderDist + playerChunkPos.x; x < chunkRenderDist + playerChunkPos.x; x++)
-			{
-				for (int y = -chunkRenderDist + playerChunkPos.y; y < chunkRenderDist + playerChunkPos.y; y++)
-				{
-					GameObject chunkObj = new GameObject("");
-					chunkObj.transform.SetParent(chunkContainer.transform);
-					Chunk chunk = chunkObj.AddComponent<Chunk>();
-					chunkObj.SetActive(false);
-					//chunk.cloud = cloud;
-					//chunk.rock = rock;
-					chunk.SetUp(terrainMaterial);
-
-					chunkPool.Add(chunk);
-				}
-			}
-		}
+		//for (int z = -initChunkRenderDist + playerChunkPos.z; z < initChunkRenderDist + playerChunkPos.z; z++)
+		//{
+		//	for (int x = -initChunkRenderDist + playerChunkPos.x; x < initChunkRenderDist + playerChunkPos.x; x++)
+		//	{
+		//		for (int y = -initChunkRenderDist + playerChunkPos.y; y < initChunkRenderDist + playerChunkPos.y; y++)
+		//		{
+		//			GameObject chunkObj = new GameObject("");
+		//			chunkObj.transform.SetParent(chunkContainer.transform);
+		//			Chunk chunk = chunkObj.AddComponent<Chunk>();
+		//			chunkObj.SetActive(false);
+		//			//chunk.cloud = cloud;
+		//			//chunk.rock = rock;
+		//			chunk.SetUp(terrainMaterial);
+		//
+		//			chunkPool.Add(chunk);
+		//		}
+		//	}
+		//}
 
 		seedOffset = new Vector3(Random.Range(0, 99999), Random.Range(0, 99999), Random.Range(0, 99999));
 		seedOffsetFloor = new Vector2(Random.Range(0, 99999), Random.Range(0, 99999));
@@ -280,12 +306,12 @@ public class MarchingCubes : MonoBehaviour
 
 		// Make first chunk
 
-		Vector3Int coord = new Vector3Int(0, 0, 0);
-		chunks.Add(coord, CreateChunk(coord));
+		Vector3Int coord000 = new Vector3Int(0, 0, 0);
+		chunks.Add(coord000, CreateChunk(coord000));
 
 		Queue<Chunk> chunkQueue = new Queue<Chunk>();
 
-		chunkQueue.Enqueue(chunks[coord]);
+		chunkQueue.Enqueue(chunks[coord000]);
 
 		bool hasStartedChain = false;
 
@@ -330,7 +356,7 @@ public class MarchingCubes : MonoBehaviour
 				if (shouldGenerateToSides[i] && shouldGenerateToSides[i + 6] &&
 				!chunks.ContainsKey(newCoords[i]))
 				{
-					if ((newCoords[i] - playerChunkPos).magnitude < chunkRenderDist)
+					if ((newCoords[i] - playerChunkPos).magnitude < initChunkRenderDist)
 					{
 						Chunk newChunk = CreateChunk(newCoords[i]);
 						chunkQueue.Enqueue(newChunk);
@@ -362,21 +388,61 @@ public class MarchingCubes : MonoBehaviour
 
 			chunkQueue.Dequeue();
 		}
+
+
+		HashSet<Vector3Int> chunkCoordsToRemove = new HashSet<Vector3Int>();
+
+		foreach (Vector3Int coord in chunks.Keys)
+		{
+			if ((coord - playerChunkPos).magnitude > chunkRenderDist)
+			{
+				chunkCoordsToRemove.Add(coord);
+			}
+		}
+		foreach (Vector3Int coord in chunkCoordsToRemove)
+		{
+
+			EmptyChunk(coord);
+			//chunks.Remove(coord);
+		}
+
+		//for (int i = 0; i < allChunks.Count; i++)
+		//{
+		//	if (chunks.ContainsKey(allChunks[i]))
+		//    {
+		//		if (allChunks[i])
+		//        {
+		//
+		//        }
+		//    }
+		//}
 	}
 
 	Chunk CreateChunk(Vector3Int coord)
     {
-		Chunk chunk = chunkPool[0];
+		if (!allChunks.Contains(coord))
+		{
+			allChunks.Add(coord);
+		}
+
+
+		GameObject chunkObj = new GameObject("");
+		chunkObj.transform.SetParent(chunkContainer.transform);
+		Chunk chunk = chunkObj.AddComponent<Chunk>();
+		//chunkObj.SetActive(false);
+		chunk.SetUp(terrainMaterial);
+		chunk.geode = geode;
+		//Chunk chunk = chunkPool[0];
 
 		chunk.gameObject.SetActive(true);
 
-		chunkPool.RemoveAt(0);
+		//chunkPool.RemoveAt(0);
 		chunk.gameObject.name = coord.x.ToString() + ", " + coord.y.ToString() + ", " + coord.z.ToString();
 		//chunkObj.transform.parent = chunkContainer.transform;
 
 		//chunk.gameObject.GetComponent<MeshFilter>().mesh = new Mesh();
 
-		chunk.gameObject.GetComponent<MeshFilter>().mesh.Clear();
+		//chunk.gameObject.GetComponent<MeshFilter>().mesh.Clear();
 		//chunk.gameObject.GetComponent<MeshFilter>().mesh.vertices = new Vector3[0];
 		//chunk.gameObject.GetComponent<MeshFilter>().mesh.triangles = new int[0];
 		chunk.mesh = chunk.gameObject.GetComponent<MeshFilter>().mesh;
@@ -393,18 +459,21 @@ public class MarchingCubes : MonoBehaviour
         {
 			Chunk chunk = chunks[coord];
 
-			chunk.coord = new Vector3Int(0, 0, 0);
+			//chunk.coord = new Vector3Int(0, 0, 0);
 
 			//chunkObj.transform.parent = emptyChunkContainer.transform;
-			chunkPool.Add(chunk);
+			//chunkPool.Add(chunk);
 			//chunk.ClearChunk();
-			chunk.gameObject.SetActive(false);
+			//chunk.gameObject.SetActive(false);
+			Destroy(chunk.gameObject);
+			chunks.Remove(coord);
 		}
 	}
 
 	async void UpdateChunks()
     {
-		HashSet<Chunk> newBorderChunks = new HashSet<Chunk>();
+		isUpdatingChunks = true;
+		//HashSet<Chunk> newBorderChunks = new HashSet<Chunk>();
 
 		HashSet<Vector3Int> chunkCoordsToRemove = new HashSet<Vector3Int>();
 		
@@ -417,76 +486,72 @@ public class MarchingCubes : MonoBehaviour
 		}
 		foreach (Vector3Int coord in chunkCoordsToRemove)
 		{
-			Vector3Int[] borderingCoords = {
-				coord + Vector3Int.up,
-				coord + Vector3Int.down,
-				coord + Vector3Int.right,
-				coord + Vector3Int.left,
-				coord + Vector3Int.forward,
-				coord + Vector3Int.back,
-				};
+			//Vector3Int[] borderingCoords = {
+			//	coord + Vector3Int.up,
+			//	coord + Vector3Int.down,
+			//	coord + Vector3Int.right,
+			//	coord + Vector3Int.left,
+			//	coord + Vector3Int.forward,
+			//	coord + Vector3Int.back,
+			//	};
 
-			foreach (Vector3Int borderingCoord in borderingCoords)
-            {
-				if (chunks.ContainsKey(borderingCoord) && !chunkCoordsToRemove.Contains(borderingCoord))
-                {
-					newBorderChunks.Add(chunks[borderingCoord]);
-                }
-            }
+			//foreach (Vector3Int borderingCoord in borderingCoords)
+            //{
+			//	if (chunks.ContainsKey(borderingCoord) && !chunkCoordsToRemove.Contains(borderingCoord))
+            //    {
+			//		newBorderChunks.Add(chunks[borderingCoord]);
+            //    }
+            //}
 
 			EmptyChunk(coord);
-			chunks.Remove(coord);
+			//chunks.Remove(coord);
 		}
 		await Task.Yield();
 
 
-		Vector3Int tempPlayerChunkPos = playerChunkPos;
-		// needs work
-		foreach ( Chunk borderChunk in borderChunks)
-        {
-			if (!Application.isPlaying) return;
+		//Vector3Int tempPlayerChunkPos = playerChunkPos;
 
-			Queue<Chunk> chunkQueue = new Queue<Chunk>();
 
-			Vector3Int bCoord = borderChunk.coord;
-			Vector3Int[] bNewCoords = {
-				bCoord + Vector3Int.right,
-				bCoord + Vector3Int.left,
-				bCoord + Vector3Int.up,
-				bCoord + Vector3Int.down,
-				bCoord + Vector3Int.forward,
-				bCoord + Vector3Int.back,
-				};
 
-			for (int i = 0; i < 6; i++)
+		//foreach ( Vector3Int chunkCoord in allChunks)
+        //{
+		//	if (!Application.isPlaying) return;
+		//
+		//
+		//	if (!chunks.ContainsKey(chunkCoord) && (chunkCoord - playerChunkPos).magnitude < chunkRenderDist)
+        //    {
+		//		Chunk newChunk = CreateChunk(chunkCoord);
+		//		chunkQueue.Enqueue(newChunk);
+		//		chunks.Add(chunkCoord, newChunk);
+		//	}
+		//}
+
+		for (int z = -chunkRenderDist + playerChunkPos.z; z < chunkRenderDist + playerChunkPos.z; z++)
+		{
+			for (int x = -chunkRenderDist + playerChunkPos.x; x < chunkRenderDist + playerChunkPos.x; x++)
 			{
-				if (borderChunk.shouldGenerateToSides[i] && borderChunk.shouldGenerateToSides[i + 6] &&
-				!chunks.ContainsKey(bNewCoords[i]))
+				for (int y = -chunkRenderDist + playerChunkPos.y; y < chunkRenderDist + playerChunkPos.y; y++)
 				{
-					if ((bNewCoords[i] - tempPlayerChunkPos).magnitude < chunkRenderDist)
+					Vector3Int chunkCoord = new Vector3Int(x, y, z);
+					if (allChunks.Contains(chunkCoord) && !chunks.ContainsKey(chunkCoord) && (chunkCoord - playerChunkPos).magnitude < chunkRenderDist)
 					{
-						Chunk newChunk = CreateChunk(bNewCoords[i]);
+						Chunk newChunk = CreateChunk(chunkCoord);
 						chunkQueue.Enqueue(newChunk);
-						chunks.Add(bNewCoords[i], newChunk);
-						if (ShouldBeBorderChunk(newChunk, tempPlayerChunkPos, newBorderChunks))
-                        {
-							newBorderChunks.Add(newChunk);
-                        }
+						chunks.Add(chunkCoord, newChunk);
 					}
-					//else if (!borderChunks.Contains(borderChunk))
-					//{
-					//	newBorderChunks.Add(borderChunk);
-					//}
 				}
 			}
+		}
 
-			while (chunkQueue.Count > 0)
-			{
+		while (chunkQueue.Count > 0)
+		{
 
-				if (!Application.isPlaying) return;
+			if (!Application.isPlaying) return;
 
+			if (chunkQueue.Peek() != null)
+            {
 				if (chunkCoordDeformationDict.ContainsKey(chunkQueue.Peek().coord))
-                {
+				{
 					chunkQueue.Peek().deformations = chunkCoordDeformationDict[chunkQueue.Peek().coord];
 				}
 
@@ -498,62 +563,31 @@ public class MarchingCubes : MonoBehaviour
 				GenerateChunkDensity(chunkQueue.Peek());
 				GenerateChunk(chunkQueue.Peek());
 
-				bool[] shouldGenerateToSides = new bool[12];
-				sidesBuffer.GetData(shouldGenerateToSidesUint);
 
 				sidesBuffer.Release();
-				for (int i = 0; i < 12; i++)
-				{
-					if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
-					if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
-				}
-
-				chunkQueue.Peek().shouldGenerateToSides = shouldGenerateToSides;
-
-				Vector3Int qCoord = chunkQueue.Peek().coord;
-				Vector3Int[] newCoords = {
-				qCoord + Vector3Int.right,
-				qCoord + Vector3Int.left,
-				qCoord + Vector3Int.up,
-				qCoord + Vector3Int.down,
-				qCoord + Vector3Int.forward,
-				qCoord + Vector3Int.back,
-				};
-
-				for (int i = 0; i < 6; i++)
-				{
-					if (shouldGenerateToSides[i] && shouldGenerateToSides[i + 6] &&
-					!chunks.ContainsKey(newCoords[i]))
-					{
-						if ((newCoords[i] - tempPlayerChunkPos).magnitude < chunkRenderDist)
-						{
-							Chunk newChunk = CreateChunk(newCoords[i]);
-							chunkQueue.Enqueue(newChunk);
-							chunks.Add(newCoords[i], newChunk);
-							if (ShouldBeBorderChunk(newChunk, tempPlayerChunkPos, newBorderChunks))
-                            {
-								newBorderChunks.Add(newChunk);
-							}
-						}
-						//else if (!newBorderChunks.Contains(chunkQueue.Peek()))
-						//{
-						//	newBorderChunks.Add(chunkQueue.Peek());
-						//}
-					}
-				}
 
 				chunkQueue.Dequeue();
-
-				await Task.Yield();
 			}
+			else
+            {
+				Debug.Log("oh no");
+
+				chunkQueue.Dequeue();
+			}
+
+			
+
+			await Task.Yield();
 		}
 
-		borderChunks = newBorderChunks;
+		//borderChunks = newBorderChunks;
+
+		isUpdatingChunks = false;
 	}
 
 	bool ShouldBeBorderChunk(Chunk chunk, Vector3Int playerChunkPosition, HashSet<Chunk> borderChunkSet)
     {
-		return (chunk.coord - playerChunkPosition).magnitude > chunkRenderDist - 1.6f && !borderChunkSet.Contains(chunk);
+		return (chunk.coord - playerChunkPosition).magnitude > chunkRenderDist - chunkSize * 1.6f && !borderChunkSet.Contains(chunk);
 
 	}
 
@@ -607,14 +641,12 @@ public class MarchingCubes : MonoBehaviour
 
 	void GenerateChunk(Chunk chunk)
     {
-		//hasHolesBuffer.SetData(chunk.hasHoles);
 
 		int numThreadsPerAxis = Mathf.CeilToInt((chunkSize - 1) / (float)8);
 		int numVoxels = (chunkSize - 1) * (chunkSize - 1) * (chunkSize - 1);
 		int maxTriangleCount = numVoxels * 5;
 		int maxVertexCount = maxTriangleCount * 3;
 
-		//triangleBuffer = new ComputeBuffer(maxTriangleCount, System.Runtime.InteropServices.Marshal.SizeOf(typeof(VertexData)), ComputeBufferType.Append);
 		triangleBuffer = new ComputeBuffer(maxTriangleCount, sizeof(float) * 3 * 3 + sizeof(float) * 3, ComputeBufferType.Append);
 		triCountBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
 		
@@ -624,7 +656,6 @@ public class MarchingCubes : MonoBehaviour
 
 		cShader.SetBuffer(0, "points", pointsBuffer);
 		cShader.SetBuffer(0, "triangles", triangleBuffer);
-		//cShader.SetBuffer(0, "hasHoles", hasHolesBuffer);
 		cShader.SetInt("chunkSize", chunkSize);
 		cShader.SetFloat("isoLevel", isoLevel);
 
@@ -640,30 +671,11 @@ public class MarchingCubes : MonoBehaviour
 		vertexDataArray = new VertexData[numTris * 3];
 		triangleBuffer.GetData(vertexDataArray, 0, 0, numTris * 3);
 
-		//Dictionary<Vector3, int> mergedVertsDict = new Dictionary<Vector3, int>();
-		//mergedVertsDict.
-
-		//var vertices = new Vector3[numTris * 3];
-		//var meshTriangles = new int[numTris * 3];
 
 		ReleaseBuffers();
 
 		chunk.CreateMesh(vertexDataArray, numTris * 3, false);
 
-		//for (int i = 0; i < numTris; i++)
-		//{
-		//	for (int j = 0; j < 3; j++)
-		//	{
-		//		meshTriangles[i * 3 + j] = i * 3 + j;
-		//		vertices[i * 3 + j] = tris[i][j];
-		//	}
-		//}
-		//chunk.mesh.SetVertices(vertices);
-		//chunk.mesh.SetTriangles(meshTriangles, 0, true);
-		//
-		//chunk.mesh.RecalculateNormals();
-
-		//hasHolesBuffer.GetData(chunk.hasHoles, 0, 0, 2);
 
 	}
 
@@ -737,33 +749,6 @@ public class MarchingCubes : MonoBehaviour
 		return cPointBuffer;
 	}
 
-	/*
-	public void GenerateHeightValues(ComputeBuffer cfloorBuffer, ComputeBuffer cCeilingBuffer, Vector2 chunkOffset)
-    {
-
-		int numThreadsPerAxis = Mathf.CeilToInt((chunkSize) / (float)8);
-
-		cShaderHNoise.SetInt("chunkSize", chunkSize);
-		cShaderHNoise.SetVector("chunkOffset", chunkOffset);
-		cShaderHNoise.SetVector("seedOffsetFloor", seedOffsetFloor);
-		cShaderHNoise.SetVector("seedOffsetCeiling", seedOffsetCeiling);
-		cShaderHNoise.SetFloat("freqFloor", noiseFreqGround);
-		cShaderHNoise.SetFloat("freqCeiling", noiseFreqCeiling);
-		//cShaderHNoise.SetFloat("floorVariance", floorVariance);
-		cShaderHNoise.SetFloat("ceilingVariance", ceilingVariance);
-		cShaderHNoise.SetBuffer(0, "floorValues", cfloorBuffer);
-		cShaderHNoise.SetBuffer(0, "ceilingValues", cCeilingBuffer);
-		//cShaderHNoise.SetBuffer(0, "minMaxHeight", cMinMaxBuffer);
-
-		cShaderHNoise.Dispatch(0, numThreadsPerAxis, numThreadsPerAxis, 1);
-
-		floorBuffer = cfloorBuffer;
-		ceilingBuffer = cCeilingBuffer;
-
-		//minMaxHeightBuffer = cMinMaxBuffer;
-
-    }
-	*/
 	public async void DeformChunks(Deformation deformation, float timeOffsetToApply = 0)
     {
 
@@ -824,6 +809,10 @@ public class MarchingCubes : MonoBehaviour
 
 		foreach (Vector3Int coord in intersectingCoords)
         {
+			if (!allChunks.Contains(coord))
+            {
+				allChunks.Add(coord);
+            }
 
 			if (chunks.ContainsKey(coord) && !preComputedChunks.ContainsKey(coord))
             {
@@ -843,18 +832,18 @@ public class MarchingCubes : MonoBehaviour
 				GenerateChunkDensity(intersectingChunk);
 				GenerateChunk(intersectingChunk);
 
-				sidesBuffer.GetData(shouldGenerateToSidesUint);
+				//sidesBuffer.GetData(shouldGenerateToSidesUint);
 
 				sidesBuffer.Release();
 
-				bool[] shouldGenerateToSides = new bool[12];
-
-				for (int i = 0; i < 12; i++)
-				{
-					if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
-					if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
-				}
-				intersectingChunk.shouldGenerateToSides = shouldGenerateToSides;
+				//bool[] shouldGenerateToSides = new bool[12];
+				//
+				//for (int i = 0; i < 12; i++)
+				//{
+				//	if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
+				//	if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
+				//}
+				//intersectingChunk.shouldGenerateToSides = shouldGenerateToSides;
 
 				intersectingChunk.gameObject.SetActive(false);
 
@@ -911,19 +900,19 @@ public class MarchingCubes : MonoBehaviour
 				GenerateChunkDensity(intersectingChunk);
 				GenerateChunk(intersectingChunk);
 
-				sidesBuffer.GetData(shouldGenerateToSidesUint);
+				//sidesBuffer.GetData(shouldGenerateToSidesUint);
 
 				sidesBuffer.Release();
 
 
-				bool[] shouldGenerateToSides = new bool[12];
-
-				for (int i = 0; i < 12; i++)
-				{
-					if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
-					if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
-				}
-				intersectingChunk.shouldGenerateToSides = shouldGenerateToSides;
+				//bool[] shouldGenerateToSides = new bool[12];
+				//
+				//for (int i = 0; i < 12; i++)
+				//{
+				//	if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
+				//	if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
+				//}
+				//intersectingChunk.shouldGenerateToSides = shouldGenerateToSides;
 
 				intersectingChunk.gameObject.SetActive(false);
 
@@ -946,18 +935,18 @@ public class MarchingCubes : MonoBehaviour
 				GenerateChunkDensity(intersectingChunk);
 				GenerateChunk(intersectingChunk);
 
-				sidesBuffer.GetData(shouldGenerateToSidesUint); 
+				//sidesBuffer.GetData(shouldGenerateToSidesUint); 
 
 				sidesBuffer.Release();
 
-				bool[] shouldGenerateToSides = new bool[12];
-
-				for (int i = 0; i < 12; i++)
-				{
-					if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
-					if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
-				}
-				intersectingChunk.shouldGenerateToSides = shouldGenerateToSides;
+				//bool[] shouldGenerateToSides = new bool[12];
+				//
+				//for (int i = 0; i < 12; i++)
+				//{
+				//	if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
+				//	if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
+				//}
+				//intersectingChunk.shouldGenerateToSides = shouldGenerateToSides;
 
 				intersectingChunk.gameObject.SetActive(false);
 
@@ -1006,18 +995,18 @@ public class MarchingCubes : MonoBehaviour
 				GenerateChunkDensity(intersectingChunk);
 				GenerateChunk(intersectingChunk);
 
-				sidesBuffer.GetData(shouldGenerateToSidesUint);
+				//sidesBuffer.GetData(shouldGenerateToSidesUint);
 
 				sidesBuffer.Release();
 
-				bool[] shouldGenerateToSides = new bool[12];
-
-				for (int i = 0; i < 12; i++)
-				{
-					if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
-					if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
-				}
-				intersectingChunk.shouldGenerateToSides = shouldGenerateToSides;
+				//bool[] shouldGenerateToSides = new bool[12];
+				//
+				//for (int i = 0; i < 12; i++)
+				//{
+				//	if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
+				//	if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
+				//}
+				//intersectingChunk.shouldGenerateToSides = shouldGenerateToSides;
 
 				intersectingChunk.gameObject.SetActive(false);
 
@@ -1041,11 +1030,22 @@ public class MarchingCubes : MonoBehaviour
             {
 				if (chunks.ContainsKey(coord))
                 {
+					//bool isQueued = false;
+					//if(chunkQueue.Contains(chunks[coord]))
+                    //{
+					//	//Debug.Log("aight");
+					//	//isQueued = true;
+                    //}
 					EmptyChunk(coord);
-					chunks.Remove(coord);
+					//chunks.Remove(coord);
                 }
 				chunks.Add(coord, preComputedChunks[coord][timeToApply]);
 				chunks[coord].gameObject.SetActive(true);
+
+				//if (isQueued)
+                //{
+				//
+                //}
 				//Debug.Log(chunks[coord].deformations.Count);
 
 				preComputedChunks[coord].Remove(timeToApply);
@@ -1064,10 +1064,10 @@ public class MarchingCubes : MonoBehaviour
 					chunkCoordDeformationDict[coord] = chunks[coord].deformations;
 				}
 
-				if (ShouldBeBorderChunk(chunks[coord], playerChunkPos, borderChunks))
-                {
-					borderChunks.Add(chunks[coord]);
-                }
+				//if (ShouldBeBorderChunk(chunks[coord], playerChunkPos, borderChunks))
+                //{
+				//	borderChunks.Add(chunks[coord]);
+                //}
 			}
 
 			//Vector3Int coord = intersectingChunk.coord;
@@ -1105,18 +1105,18 @@ public class MarchingCubes : MonoBehaviour
 		GenerateChunkDensity(updatedChunk);
 		GenerateChunk(updatedChunk);
 
-		sidesBuffer.GetData(shouldGenerateToSidesUint);
+		//sidesBuffer.GetData(shouldGenerateToSidesUint);
 
 		sidesBuffer.Release();
 
-		bool[] shouldGenerateToSides = new bool[12];
-
-		for (int i = 0; i < 12; i++)
-		{
-			if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
-			if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
-		}
-		updatedChunk.shouldGenerateToSides = shouldGenerateToSides;
+		//bool[] shouldGenerateToSides = new bool[12];
+		//
+		//for (int i = 0; i < 12; i++)
+		//{
+		//	if (shouldGenerateToSidesUint[i] == 0) shouldGenerateToSides[i] = false;
+		//	if (shouldGenerateToSidesUint[i] == 1) shouldGenerateToSides[i] = true;
+		//}
+		//updatedChunk.shouldGenerateToSides = shouldGenerateToSides;
 
 		updatedChunk.gameObject.SetActive(false);
 

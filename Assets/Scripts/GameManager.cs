@@ -11,11 +11,24 @@ public class GameManager : MonoBehaviour
 
 	public List<GameObject> spawnedItems = new List<GameObject>();
 
-	// Start is called before the first frame update
-	void Start()
+	public static Transform geodeContainer;
+	public static List<GameObject> interactables = new List<GameObject>();
+	public List<GameObject> chests = new List<GameObject>();
+
+    private void Awake()
+    {
+		geodeContainer = new GameObject("Geode Container").transform;
+        
+    }
+
+
+    // Start is called before the first frame update
+    void Start()
 	{
 		pc = FindFirstObjectByType<PlayerController>();
 		pi = FindFirstObjectByType<PlayerInventory>();
+
+		
 	}
 
 	// Update is called once per frame
@@ -38,6 +51,45 @@ public class GameManager : MonoBehaviour
 					spawnedItems.RemoveAt(i);
                 }
             }
+        }
+
+		float closestDistance = Mathf.Infinity;
+
+		if (pc.currentInteractible != null)
+        {
+			pc.currentInteractible.interactTextCanvas.SetActive(false);
+        }
+
+		pc.currentInteractible = null;
+
+		List<int> indicesToRemove = new List<int>();
+
+		for (int i = 0;  i < interactables.Count; i++)
+		{
+			if (interactables[i] != null)
+            {
+				float distance = (pc.transform.position - interactables[i].transform.position).magnitude;
+				if (distance < 5
+					)
+				{
+					if (distance < closestDistance)
+					{
+						closestDistance = distance;
+						pc.currentInteractible = interactables[i].GetComponent<Interactable>();
+
+						pc.currentInteractible.interactTextCanvas.SetActive(true);
+					}
+				}
+			}
+            else
+            {
+				indicesToRemove.Add(i);
+            }
+			
+        }
+		for (int i = indicesToRemove.Count - 1; i > 0; i--)
+        {
+			interactables.RemoveAt(indicesToRemove[i]);
         }
 	}
 

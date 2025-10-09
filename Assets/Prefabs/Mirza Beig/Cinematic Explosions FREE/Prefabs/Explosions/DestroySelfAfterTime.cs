@@ -9,21 +9,21 @@ public class DestroySelfAfterTime : MonoBehaviour
 
     float timeElapsed;
     float initialIntensity;
-    Light light;
+    Light _light;
 
     void Start()
     {
-        light = GetComponent<Light>();
+        _light = GetComponent<Light>();
         Destroy(gameObject, time);
 
         timeElapsed = 0;
-        initialIntensity = light.intensity;
+        initialIntensity = _light.intensity;
     }
 
     private void Update()
     {
         timeElapsed += Time.deltaTime;
 
-        light.intensity = brightnessFalloff.Evaluate(Mathf.Lerp(0, 1, timeElapsed / time)) * initialIntensity;
+        _light.intensity = brightnessFalloff.Evaluate(Mathf.Lerp(0, 1, timeElapsed / time)) * initialIntensity;
     }
 }

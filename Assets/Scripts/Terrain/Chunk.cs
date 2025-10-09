@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Mathematics;
+//using Unity.Mathematics;
 
 public class Chunk : MonoBehaviour
 {
@@ -18,14 +18,14 @@ public class Chunk : MonoBehaviour
     MeshFilter meshFilter;
     MeshRenderer meshRenderer;
 
-    Dictionary<int2, int> vertexIndexMap;
-    List<Vector3> processedVertices;
+    //Dictionary<int2, int> vertexIndexMap;
+    //List<Vector3> processedVertices;
     //List<Vector3> processedNormals;
-    List<int> processedTriangles;
+    //List<int> processedTriangles;
 	//List<GameObject> objects;
 
 	//public GameObject cloud;
-	//public GameObject rock;
+	public GameObject geode;
 
 	public bool isRegenerated;
 
@@ -105,9 +105,16 @@ public class Chunk : MonoBehaviour
 
 			uvs[i] = new Vector2(oreType, vertTerrainTypes[i]);
 
-			if (false)
+			if (MarchingCubes.isInitializingChunks)
             {
-				//Instantiate(rock, vertexData[i].position + transform.position, Quaternion.identity);
+				if (Random.Range(0f, 1f) > 0.9999f && Random.Range(0f, 1f) < 0.7f)
+				{
+					GameObject geodeInstance = Instantiate(geode, vertexData[i].position + transform.position, Quaternion.identity);
+					geodeInstance.transform.localScale = Vector3.one * Random.Range(1f, 2f);
+
+					geodeInstance.transform.parent = GameManager.geodeContainer;
+					GameManager.interactables.Add(geodeInstance);
+                }
             }
 
 			//if (vertexData[i].terrainType < 0.4f)

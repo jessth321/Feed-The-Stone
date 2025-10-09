@@ -69,6 +69,8 @@ public class PlayerController : MonoBehaviour
 	[SerializeField] Transform cameraContainer;
 	CameraController cameraController;
 
+	[HideInInspector] public Interactable currentInteractible;
+
 
 	private void OnEnable()
 	{
@@ -86,6 +88,8 @@ public class PlayerController : MonoBehaviour
 	{
 		if (isAlive)
 		{
+
+
 			float targetSpeed = 0;
 
 			if (moveDirection.magnitude > 0)
@@ -467,6 +471,14 @@ public class PlayerController : MonoBehaviour
 	{
 		isWalking = !isWalking;
 	}
+
+	void OnInteract()
+    {
+		if (currentInteractible)
+        {
+			currentInteractible.Invoke("OnInteract", 0);
+        }
+    }
 
 
 	void OnThrowStickyBomb()

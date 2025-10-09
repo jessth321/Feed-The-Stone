@@ -90,18 +90,15 @@ public class CameraController : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, player.position, tightness * 60 * Time.deltaTime);
 
 
-        
-        if (newXRot > 290 && newXRot < 345)
-        {
-            float lerp = Mathf.Lerp(0, 1f, (45 - (newXRot - 300)) / 45);
-            lerp = lerp * lerp;
-            
-            focusTransform.localPosition = new Vector3(focusTransform.localPosition.x, heightOffset * (1 + lerp), focusTransform.localPosition.z);
-        }
-        else
-        {
-            focusTransform.localPosition = new Vector3(focusTransform.localPosition.x, heightOffset * 1, focusTransform.localPosition.z);
-        }
+
+        //if (newXRot > 290 && newXRot < 345)
+        //{
+        //    _camera.localPosition = new Vector3(0, 0, Mathf.SmoothStep(-cameraDistance, -2, (45 - (newXRot - 300)) / 45));
+        //}
+        //else
+        //{
+        //    _camera.localPosition = localCameraDefaultPos;
+        //}
 
         List<Vector3> offsetVectors = new List<Vector3>();
         offsetVectors.Add(Vector3.zero);
@@ -129,8 +126,17 @@ public class CameraController : MonoBehaviour
                 }
             }
         }
+
+        if (rayPointLocal.z > _camera.localPosition.z)
+        {
+            _camera.localPosition = Vector3.Lerp(_camera.localPosition, rayPointLocal, Time.deltaTime * collisionTightness);
+            _camera.localPosition = rayPointLocal;
+        }
+        else
+        {
+            _camera.localPosition = Vector3.Lerp(_camera.localPosition, rayPointLocal, Time.deltaTime * collisionTightness * 0.04f);
+        }
         
-        _camera.localPosition = Vector3.Lerp(_camera.localPosition, rayPointLocal, Time.deltaTime * collisionTightness);
 
 
     }
