@@ -10,23 +10,42 @@ public class Chunk : MonoBehaviour
 
 	public List<Deformation> deformations;
 
-    [HideInInspector]
-    public Mesh mesh;
+	//[HideInInspector]
+	//public List<int> interacableIndices = new List<int>();
+
+	[HideInInspector]
+	public Mesh mesh;
 	[HideInInspector]
 	public MeshCollider meshCollider;
 
     MeshFilter meshFilter;
     MeshRenderer meshRenderer;
 
-    //Dictionary<int2, int> vertexIndexMap;
-    //List<Vector3> processedVertices;
-    //List<Vector3> processedNormals;
-    //List<int> processedTriangles;
+	//Dictionary<int2, int> vertexIndexMap;
+	//List<Vector3> processedVertices;
+	//List<Vector3> processedNormals;
+	//List<int> processedTriangles;
 	//List<GameObject> objects;
+
+	[SerializeField] Mesh oreMesh;
+	[SerializeField] Material goldMaterial;
+	[SerializeField] Material ironMaterial;
+
+	public Matrix4x4[] goldMatrices;
+	public Matrix4x4[] ironMatrices;
+	private MaterialPropertyBlock goldMaterialPropertyBlock;
+	private MaterialPropertyBlock ironMaterialPropertyBlock;
+
+	//public int chunkGoldMatrixIndex;
+	//public int chunkIronMatrixIndex;
+	//public int chunkGoldMatrixLength;
+	//public int chunkIronMatrixLength;
+
 
 	//public GameObject cloud;
 	public GameObject geode;
 
+	[HideInInspector]
 	public bool isRegenerated;
 
 
@@ -36,7 +55,55 @@ public class Chunk : MonoBehaviour
 		deformations = new List<Deformation>();
 	}
 
-    public void SetUp(Material terrainMaterial)
+    private void Update()
+    {
+
+		//if ((goldMatrices != null && goldMatrices.Length > 0) || (ironMatrices != null && ironMatrices.Length > 0))
+		//{
+		//	RenderOres();
+		//}
+		
+	}
+
+	void RenderOres()
+	{
+
+		if (oreMesh != null && goldMaterial != null || goldMatrices != null)
+		{
+			Graphics.RenderMeshInstanced(
+			   new RenderParams(goldMaterial)
+			   {
+				   matProps = goldMaterialPropertyBlock,
+				   shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On,
+				   receiveShadows = true
+			   },
+			   oreMesh,
+			   0,
+			   goldMatrices,
+			   goldMatrices.Length
+		   );
+		}
+
+		if (oreMesh != null && ironMaterial != null || ironMatrices != null)
+		{
+			Graphics.RenderMeshInstanced(
+			   new RenderParams(ironMaterial)
+			   {
+				   matProps = ironMaterialPropertyBlock,
+				   shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On,
+				   receiveShadows = true
+			   },
+			   oreMesh,
+			   0,
+			   ironMatrices,
+			   ironMatrices.Length
+		   );
+		}
+
+
+	}
+
+    public void SetUp(Material terrainMaterial, Mesh oreMeshIn, Material goldMat, Material ironMat)
     {
         meshFilter = gameObject.AddComponent<MeshFilter>();
         meshRenderer = gameObject.AddComponent<MeshRenderer>();
@@ -49,6 +116,12 @@ public class Chunk : MonoBehaviour
 		meshCollider = meshRenderer.gameObject.AddComponent<MeshCollider>();
 
 		//objects = new List<GameObject>();
+		//interacableIndices = new List<int>();
+
+		oreMesh = oreMeshIn;
+		goldMaterial = goldMat;
+		ironMaterial = ironMat;
+
 
 		tag = "Terrain";
 
@@ -69,6 +142,14 @@ public class Chunk : MonoBehaviour
 
 		Vector2[] uvs = new Vector2[numVertices];
 
+		HashSet<Vector3> goldVerts = new HashSet<Vector3>();
+		HashSet<Vector3> ironVerts = new HashSet<Vector3>();
+
+		//chunkGoldMatrixIndex = goldMatrixIndex;
+
+		goldMaterialPropertyBlock = new MaterialPropertyBlock();
+		ironMaterialPropertyBlock = new MaterialPropertyBlock();
+
 
 		for (int i = 0; i < numVertices; i++)
 		{ 
@@ -78,13 +159,15 @@ public class Chunk : MonoBehaviour
 
 			if (vertexData[i].terrainType < 0f)
 			{
-				Debug.Log("aha");
+				//Debug.Log("aha");
 			}
 
 			if (vertexData[i].terrainType > 1.0f && vertexData[i].terrainType <= 2.0f)
 			{
-
+				
 				oreType = 1f;
+
+				goldVerts.Add(vertexData[i].position + transform.position);
 
 				vertTerrainTypes[i] = vertexData[i].terrainType - 1.0f;
 			}
@@ -92,6 +175,8 @@ public class Chunk : MonoBehaviour
 			{
 
 				oreType = 2f;
+
+				ironVerts.Add(vertexData[i].position + transform.position);
 
 				vertTerrainTypes[i] = vertexData[i].terrainType - 2.0f;
 			}
@@ -109,10 +194,11 @@ public class Chunk : MonoBehaviour
             {
 				if (Random.Range(0f, 1f) > 0.9999f && Random.Range(0f, 1f) < 0.7f)
 				{
-					GameObject geodeInstance = Instantiate(geode, vertexData[i].position + transform.position, Quaternion.identity);
+					Interactable geodeInstance = Instantiate(geode, vertexData[i].position + transform.position, Quaternion.identity).GetComponent<Interactable>();
 					geodeInstance.transform.localScale = Vector3.one * Random.Range(1f, 2f);
 
 					geodeInstance.transform.parent = GameManager.geodeContainer;
+					//interacableIndices.Add(GameManager.interactables.Count);
 					GameManager.interactables.Add(geodeInstance);
                 }
             }
@@ -177,7 +263,35 @@ public class Chunk : MonoBehaviour
 		//	}
 		//}
 
+		//chunkGoldMatrixLength = goldVerts.Count;
+		//chunkIronMatrixLength = ironVerts.Count;
+
+
+		goldMatrices = new Matrix4x4[goldVerts.Count];
+		ironMatrices = new Matrix4x4[ironVerts.Count];
+
+
+		int index = 0;
+		foreach (Vector3 vert in goldVerts)
+		{
+			goldMatrices[index] = Matrix4x4.TRS(
+					vert,
+				Quaternion.Euler((transform.position.x + vert.x) * 999, (transform.position.y + vert.y) * 999, (transform.position.z + vert.z) * 999),
+				Vector3.one * 100 * (1f + Mathf.Abs(((transform.position + vert).GetHashCode() / 100f) % 1f))); 
+			index++;
+		}
 		
+		index = 0;
+		foreach (Vector3 vert in ironVerts)
+		{
+			ironMatrices[index] = 
+				Matrix4x4.TRS(
+					vert, 
+				Quaternion.Euler((transform.position.x + vert.x) * 999, (transform.position.y + vert.y) * 999, (transform.position.z + vert.z) * 999), 
+				Vector3.one * 100 * (1f + Mathf.Abs(((transform.position + vert).GetHashCode() / 100f) % 1f)));
+			index++;
+		}
+
 
 
 		meshCollider.sharedMesh = null;

@@ -588,7 +588,7 @@ PointData heightBlend(float3 pos, float value)
 		
 			float radius = deformations[i].radius;
 			
-			radius *= (terrainType - 0.995) * 200;
+			//radius *= (terrainType - 0.995) * 200;
 			
 			
 			
@@ -665,20 +665,20 @@ PointData heightBlend(float3 pos, float value)
 	
 	
 	float oreValue = (snoise((pos.xyz + seedOffset + chunkOffset.xyz) * 0.03) + 1) * 0.5;
-	float oreMask = (snoise((pos.xyz + float3(seedOffsetCont.x, seedOffsetCeiling.y, seedOffsetErosion.y) + chunkOffset.xyz) * 0.03) + 1) * 0.5;
+	float oreValue2 = (snoise((pos.xyz + float3(seedOffsetCont.x, seedOffsetCeiling.y, seedOffsetErosion.y) + chunkOffset.xyz) * 0.03) + 1) * 0.5;
 	
 	float originalType = terrainType;
 	
 	
 	if (true)//terrainType < 0.9995 || terrainType > 1.0)
 	{
-		if (oreValue > 0.8)
+		if (oreValue > 0.92)
 		{
-			//terrainType += 1;
+			terrainType += 1;
 		}
-		else if (oreMask < 0.2)
+        else if (oreValue2 < 0.08)
 		{
-			//terrainType += 2;
+			terrainType += 2;
 		}
 	}
 	

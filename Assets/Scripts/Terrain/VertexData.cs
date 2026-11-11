@@ -16,6 +16,7 @@ public struct PointData
     public float terrainType;
 };
 
+[System.Serializable]
 public struct Deformation
 {
 	public Vector3 position;

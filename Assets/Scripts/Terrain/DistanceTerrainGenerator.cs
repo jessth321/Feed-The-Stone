@@ -113,6 +113,10 @@ public class DistanceTerrainGenerator : MonoBehaviour
 	//public GameObject cloud;
 	public GameObject rock;
 
+	public Mesh oreMesh;
+	public Material goldMaterial;
+	public Material ironMaterial;
+
 
 
 
@@ -223,7 +227,7 @@ public class DistanceTerrainGenerator : MonoBehaviour
 					chunkObj.SetActive(false);
 					//chunk.cloud = cloud;
 					//chunk.rock = rock;
-					chunk.SetUp(terrainMaterial);
+					chunk.SetUp(terrainMaterial, oreMesh, goldMaterial, ironMaterial);
 
 					chunkPool.Add(chunk);
 				}
@@ -597,7 +601,7 @@ public class DistanceTerrainGenerator : MonoBehaviour
 
 		ReleaseBuffers();
 
-		chunk.CreateMesh(vertexDataArray, numTris * 3, false);
+		//chunk.CreateMesh(vertexDataArray, numTris * 3, false);
 
 		//for (int i = 0; i < numTris; i++)
 		//{

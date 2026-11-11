@@ -280,7 +280,7 @@ MonoBehaviour:
   typeAnimID: 0
   parentConstraint: {fileID: 0}
   deformTransform: {fileID: 0}
-  deformationRadius: 8
+  deformationRadius: 5
   deformationBlend: 0.114
   deformationFrequency: 0.39
   deformationAmp: 0.126

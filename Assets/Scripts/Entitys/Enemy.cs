@@ -189,13 +189,13 @@ public class Enemy : MonoBehaviour
 				//anim.SetTrigger("JustLanded");
 			}
 
-			preVelocityY = rb.linearVelocity.y;
+			preVelocityY = rb.velocity.y;
 			wasGrounded = isGrounded;
 
 
 			if (isGrounded)
 			{
-				if (isTrackingPlayer && !isJumping && rb.linearVelocity.magnitude < 0.5f)
+				if (isTrackingPlayer && !isJumping && rb.velocity.magnitude < 0.5f)
                 {
 					Jump();
                 }
@@ -285,7 +285,7 @@ public class Enemy : MonoBehaviour
 		//    }
 		//}
 
-		rb.linearVelocity = Vector3.ProjectOnPlane(moveDirection * speed * maxSpeed, Vector3.up) + new Vector3(0, rb.linearVelocity.y, 0);
+		rb.velocity = Vector3.ProjectOnPlane(moveDirection * speed * maxSpeed, Vector3.up) + new Vector3(0, rb.velocity.y, 0);
 
 
 		//if (canMove)
@@ -346,7 +346,7 @@ public class Enemy : MonoBehaviour
 
 			rb.constraints &= ~RigidbodyConstraints.FreezePositionY;
 
-			rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
+			rb.velocity = new Vector3(rb.velocity.x, jumpForce, rb.velocity.z);
 
 			StartCoroutine(ResetJumpAfterTime());
 

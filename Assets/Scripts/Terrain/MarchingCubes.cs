@@ -129,6 +129,16 @@ public class MarchingCubes : MonoBehaviour
 	//public GameObject cloud;
 	public GameObject geode;
 
+	Matrix4x4[] goldMatrices;
+	Matrix4x4[] ironMatrices;
+	private MaterialPropertyBlock goldMaterialPropertyBlock;
+	private MaterialPropertyBlock ironMaterialPropertyBlock;
+
+	public Mesh oreMesh;
+	public Material goldMaterial;
+	public Material ironMaterial;
+
+
 	bool isUpdatingChunks = false;
 	public static bool isInitializingChunks = false;
 
@@ -169,6 +179,11 @@ public class MarchingCubes : MonoBehaviour
 	{
 
 		rooms = new RoomData[RoomsContainer.childCount];
+
+
+
+		goldMaterialPropertyBlock = new MaterialPropertyBlock();
+		ironMaterialPropertyBlock = new MaterialPropertyBlock();
 
 
 		for (int i = 0; i < RoomsContainer.childCount; i++)
@@ -249,7 +264,7 @@ public class MarchingCubes : MonoBehaviour
 				UpdateChunks();
 			}
 		}
-		
+
 
 
 		//foreach ( Chunk chunk in chunks.Values)
@@ -263,11 +278,82 @@ public class MarchingCubes : MonoBehaviour
 		//		chunk.meshCollider.enabled = false;
 		//	}
 		//}
+
+		RenderOres();
 	}
 
 	int IndexFromCoord(int x, int y, int z)
     {
 		return x + y * chunkSize + z * chunkSize * chunkSize;
+	}
+
+	void RenderOres()
+	{
+
+		if (oreMesh != null && goldMaterial != null && goldMatrices != null && goldMatrices.Length > 0)
+		{
+			Graphics.RenderMeshInstanced(
+			   new RenderParams(goldMaterial)
+			   {
+				   matProps = goldMaterialPropertyBlock,
+				   shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On,
+				   receiveShadows = true
+			   },
+			   oreMesh,
+			   0,
+			   goldMatrices,
+			   goldMatrices.Length
+		   );
+		}
+
+		if (oreMesh != null && ironMaterial != null && ironMatrices != null && ironMatrices.Length > 0)
+		{
+			Graphics.RenderMeshInstanced(
+			   new RenderParams(ironMaterial)
+			   {
+				   matProps = ironMaterialPropertyBlock,
+				   shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On,
+				   receiveShadows = true
+			   },
+			   oreMesh,
+			   0,
+			   ironMatrices,
+			   ironMatrices.Length
+		   );
+		}
+
+
+	}
+
+	void UpdateOreMatrices()
+    {
+		List<Matrix4x4> goldMatricesList = new List<Matrix4x4>();
+		List<Matrix4x4> ironMatricesList = new List<Matrix4x4>();
+
+
+		int goldIndex = 0;
+		int ironIndex = 0;
+
+		foreach (Chunk chunk in chunks.Values)
+		{
+			//if (chunk.goldMatrices)
+
+
+			if (chunk.goldMatrices != null && chunk.goldMatrices.Length > 0) 
+			{ 
+				goldMatricesList.AddRange(chunk.goldMatrices);
+				goldIndex += chunk.goldMatrices.Length;
+			}
+			if (chunk.ironMatrices != null && chunk.ironMatrices.Length > 0) 
+			{
+				ironMatricesList.AddRange(chunk.ironMatrices);
+				ironIndex += chunk.ironMatrices.Length;
+			}
+
+		}
+
+		goldMatrices = goldMatricesList.ToArray();
+		ironMatrices = ironMatricesList.ToArray();
 	}
 
 
@@ -416,6 +502,8 @@ public class MarchingCubes : MonoBehaviour
 		//        }
 		//    }
 		//}
+
+		UpdateOreMatrices();
 	}
 
 	Chunk CreateChunk(Vector3Int coord)
@@ -430,7 +518,7 @@ public class MarchingCubes : MonoBehaviour
 		chunkObj.transform.SetParent(chunkContainer.transform);
 		Chunk chunk = chunkObj.AddComponent<Chunk>();
 		//chunkObj.SetActive(false);
-		chunk.SetUp(terrainMaterial);
+		chunk.SetUp(terrainMaterial, oreMesh, goldMaterial, ironMaterial);
 		chunk.geode = geode;
 		//Chunk chunk = chunkPool[0];
 
@@ -579,6 +667,10 @@ public class MarchingCubes : MonoBehaviour
 
 			await Task.Yield();
 		}
+
+
+
+		UpdateOreMatrices();
 
 		//borderChunks = newBorderChunks;
 
@@ -822,6 +914,8 @@ public class MarchingCubes : MonoBehaviour
 
 				intersectingChunk.deformations = new List<Deformation>(chunks[coord].deformations);
 				intersectingChunk.deformations.Add(deformation);
+
+				//intersectingChunk.interacableIndices = new List<int>(chunks[coord].interacableIndices);
 
 
 
@@ -1089,7 +1183,10 @@ public class MarchingCubes : MonoBehaviour
 			//	chunkCoordDeformationDict[coord] = intersectingChunk.deformations;
 			//}
 		}
-    }
+
+		UpdateOreMatrices();
+
+	}
 
 
 	void RegeneratePreComputedChunk(Vector3Int coord, float timeToApply)
@@ -1197,8 +1294,10 @@ public class MarchingCubes : MonoBehaviour
 
 				//Debug.DrawRay(chunkCoord * (chunkSize - 1) + sampledChunks[chunkCoord][i], Vector3.up * 0.2f, Color.red, 5000);
 
-
-				pointValues.Add(chunkCoord * (chunkSize -1) + sampledChunks[chunkCoord][i], allData[IndexFromCoord(sampledChunks[chunkCoord][i].x, sampledChunks[chunkCoord][i].y, sampledChunks[chunkCoord][i].z)]);
+				if (!pointValues.ContainsKey(chunkCoord))
+				{
+					pointValues.Add(chunkCoord * (chunkSize - 1) + sampledChunks[chunkCoord][i], allData[IndexFromCoord(sampledChunks[chunkCoord][i].x, sampledChunks[chunkCoord][i].y, sampledChunks[chunkCoord][i].z)]);
+				}
 			}
 
 			
@@ -1238,6 +1337,30 @@ public class MarchingCubes : MonoBehaviour
 			deformationBuffer.Release();
 			//hasHolesBuffer.Release();
 		}
+	}
+
+
+	public List<Chunk> GetNearbyChunks()
+    {
+		List<Chunk> nearbyChunks = new List<Chunk>();
+
+		//nearbyChunks.Add(chunks[playerChunkPos]);
+
+		for (int x = -2; x < 3; x++)
+		{
+			for (int y = -2; y < 3; y++)
+			{
+				for (int z = -2; z < 3; z++)
+				{
+					if (chunks.ContainsKey(playerChunkPos + new Vector3Int(x, y, z)))
+					{
+						nearbyChunks.Add(chunks[playerChunkPos + new Vector3Int(x, y, z)]);
+					}
+				}
+			}
+		}
+		return nearbyChunks;
+
 	}
 
 

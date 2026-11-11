@@ -30,6 +30,7 @@ public class CameraController : MonoBehaviour
     Transform _camera;
     Transform cameraTarget;
 
+    public bool inSpecialState;
     public bool takeInput = true;
 
 
@@ -50,94 +51,101 @@ public class CameraController : MonoBehaviour
 
     void Update()
     {
-        float cameraDot = Vector3.Dot(_camera.forward, Vector3.up);
+        if (!inSpecialState)
+        {
+            float cameraDot = Vector3.Dot(_camera.forward, Vector3.up);
 
-        if (cameraDot < -0.3f)
-        {
-            deformTransform.localPosition = deformPositions[0].localPosition;
+            if (cameraDot < -0.3f)
+            {
+                deformTransform.localPosition = deformPositions[0].localPosition;
+            }
+            else if (cameraDot < 0.2f)
+            {
+                deformTransform.localPosition = deformPositions[1].localPosition;
+            }
+            else
+            {
+                deformTransform.localPosition = deformPositions[2].localPosition;
+            }
         }
-        else if (cameraDot < 0.2f)
-        {
-            deformTransform.localPosition = deformPositions[1].localPosition;
-        }
-        else
-        {
-            deformTransform.localPosition = deformPositions[2].localPosition;
-        }
+        
     }
 
     void LateUpdate()
     {
-        mouseDelta = pc.mouseDelta;
 
-        transform.Rotate(new Vector3(0, mouseDelta.x * horSensitivity, 0), Space.World);
-
-        float vertSenseModifier = 0.6f;
-
-        float newXRot = focusTransform.localEulerAngles.x - mouseDelta.y * vertSensitivity * vertSenseModifier;
-
-        if (newXRot < 75 || newXRot > 300)
+        if (!inSpecialState)
         {
+            mouseDelta = pc.mouseDelta;
 
-            focusTransform.localEulerAngles = new Vector3(newXRot, focusTransform.localEulerAngles.y, 0);
-        }
+            transform.Rotate(new Vector3(0, mouseDelta.x * horSensitivity, 0), Space.World);
 
-        // Stops the camera from clipping under the floor while still allowing the player to look upwards
-        //if (player.position.y - cameraTarget.position.y < 0.2f)
-        //    _camera.position = Vector3.up * 0.2f + Vector3.ProjectOnPlane(cameraTarget.position, Vector3.up) 
-        //        + (Vector3.ProjectOnPlane(player.position - cameraTarget.position, Vector3.up)) * (-0.2f * (cameraTarget.position.y - 0.2f));
+            float vertSenseModifier = 0.6f;
 
-        transform.position = Vector3.Lerp(transform.position, player.position, tightness * 60 * Time.deltaTime);
+            float newXRot = focusTransform.localEulerAngles.x - mouseDelta.y * vertSensitivity * vertSenseModifier;
 
-
-
-        //if (newXRot > 290 && newXRot < 345)
-        //{
-        //    _camera.localPosition = new Vector3(0, 0, Mathf.SmoothStep(-cameraDistance, -2, (45 - (newXRot - 300)) / 45));
-        //}
-        //else
-        //{
-        //    _camera.localPosition = localCameraDefaultPos;
-        //}
-
-        List<Vector3> offsetVectors = new List<Vector3>();
-        offsetVectors.Add(Vector3.zero);
-        offsetVectors.Add(Quaternion.AngleAxis(45, _camera.forward) * _camera.up * cameraRayThickness);
-        offsetVectors.Add(Quaternion.AngleAxis(135, _camera.forward) * _camera.up * cameraRayThickness);
-        offsetVectors.Add(Quaternion.AngleAxis(225, _camera.forward) * _camera.up * cameraRayThickness);
-        offsetVectors.Add(Quaternion.AngleAxis(315, _camera.forward) * _camera.up * cameraRayThickness);
-        
-        Vector3 rayPointLocal = localCameraDefaultPos;
-        float minDist = cameraDistance;
-        
-        for (int i = 0; i < 5; i++)
-        {
-        
-            Vector3 cameraFocusPoint = focusTransform.position + offsetVectors[i];
-        
-        
-            RaycastHit hit;
-            if (Physics.Raycast(cameraFocusPoint, ((_camera.position + offsetVectors[i]) - cameraFocusPoint).normalized, out hit, cameraDistance) && hit.transform.CompareTag("Terrain"))
+            if (newXRot < 75 || newXRot > 300)
             {
-                if ((cameraFocusPoint - hit.point).magnitude < minDist)
+
+                focusTransform.localEulerAngles = new Vector3(newXRot, focusTransform.localEulerAngles.y, 0);
+            }
+
+            // Stops the camera from clipping under the floor while still allowing the player to look upwards
+            //if (player.position.y - cameraTarget.position.y < 0.2f)
+            //    _camera.position = Vector3.up * 0.2f + Vector3.ProjectOnPlane(cameraTarget.position, Vector3.up) 
+            //        + (Vector3.ProjectOnPlane(player.position - cameraTarget.position, Vector3.up)) * (-0.2f * (cameraTarget.position.y - 0.2f));
+
+            transform.position = Vector3.Lerp(transform.position, player.position, tightness * 60 * Time.deltaTime);
+
+
+
+            //if (newXRot > 290 && newXRot < 345)
+            //{
+            //    _camera.localPosition = new Vector3(0, 0, Mathf.SmoothStep(-cameraDistance, -2, (45 - (newXRot - 300)) / 45));
+            //}
+            //else
+            //{
+            //    _camera.localPosition = localCameraDefaultPos;
+            //}
+
+            List<Vector3> offsetVectors = new List<Vector3>();
+            offsetVectors.Add(Vector3.zero);
+            offsetVectors.Add(Quaternion.AngleAxis(45, _camera.forward) * _camera.up * cameraRayThickness);
+            offsetVectors.Add(Quaternion.AngleAxis(135, _camera.forward) * _camera.up * cameraRayThickness);
+            offsetVectors.Add(Quaternion.AngleAxis(225, _camera.forward) * _camera.up * cameraRayThickness);
+            offsetVectors.Add(Quaternion.AngleAxis(315, _camera.forward) * _camera.up * cameraRayThickness);
+
+            Vector3 rayPointLocal = localCameraDefaultPos;
+            float minDist = cameraDistance;
+
+            for (int i = 0; i < 5; i++)
+            {
+
+                Vector3 cameraFocusPoint = focusTransform.position + offsetVectors[i];
+
+
+                RaycastHit hit;
+                if (Physics.Raycast(cameraFocusPoint, ((_camera.position + offsetVectors[i]) - cameraFocusPoint).normalized, out hit, cameraDistance) && hit.transform.CompareTag("Terrain"))
                 {
-                    minDist = (cameraFocusPoint - hit.point).magnitude;
-                    rayPointLocal = focusTransform.worldToLocalMatrix.MultiplyPoint(hit.point - offsetVectors[i]);
+                    if ((cameraFocusPoint - hit.point).magnitude < minDist)
+                    {
+                        minDist = (cameraFocusPoint - hit.point).magnitude;
+                        rayPointLocal = focusTransform.worldToLocalMatrix.MultiplyPoint(hit.point - offsetVectors[i]);
+                    }
                 }
             }
-        }
 
-        if (rayPointLocal.z > _camera.localPosition.z)
-        {
-            _camera.localPosition = Vector3.Lerp(_camera.localPosition, rayPointLocal, Time.deltaTime * collisionTightness);
-            _camera.localPosition = rayPointLocal;
-        }
-        else
-        {
-            _camera.localPosition = Vector3.Lerp(_camera.localPosition, rayPointLocal, Time.deltaTime * collisionTightness * 0.04f);
-        }
-        
+            if (rayPointLocal.z > _camera.localPosition.z)
+            {
+                _camera.localPosition = Vector3.Lerp(_camera.localPosition, rayPointLocal, Time.deltaTime * collisionTightness);
+                _camera.localPosition = rayPointLocal;
+            }
+            else
+            {
+                _camera.localPosition = Vector3.Lerp(_camera.localPosition, rayPointLocal, Time.deltaTime * collisionTightness * 0.04f);
+            }
 
 
+        }
     }
 }

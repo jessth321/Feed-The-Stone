@@ -6,15 +6,13 @@ public class Interactable : MonoBehaviour
 
     public OnInteractDelegate onInteract;
 
-    public GameObject interactTextCanvas;
-
-    private void OnEnable()
-    {
-        interactTextCanvas.GetComponent<Canvas>().worldCamera = Camera.main;
-    }
 
     public void OnInteract()
     {
-        onInteract.Invoke();
+        if (onInteract != null && onInteract.GetInvocationList().Length > 0)
+        {
+
+            onInteract.Invoke();
+        }
     }
 }

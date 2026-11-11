@@ -1,25 +1,29 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
 	PlayerController pc;
 	PlayerInventory pi;
+	MarchingCubes mc;
+
+	public Canvas geodeInteractCanvas;
 
 	public List<GameObject> itemIDList = new List<GameObject>();
 
-	public List<GameObject> spawnedItems = new List<GameObject>();
+	public List<Item> spawnedItems = new List<Item>();
 
 	public static Transform geodeContainer;
-	public static List<GameObject> interactables = new List<GameObject>();
+	public static List<Interactable> interactables = new List<Interactable>();
 	public List<GameObject> chests = new List<GameObject>();
 
     private void Awake()
     {
 		geodeContainer = new GameObject("Geode Container").transform;
-        
-    }
+
+	}
 
 
     // Start is called before the first frame update
@@ -27,16 +31,19 @@ public class GameManager : MonoBehaviour
 	{
 		pc = FindFirstObjectByType<PlayerController>();
 		pi = FindFirstObjectByType<PlayerInventory>();
+		mc = FindFirstObjectByType<MarchingCubes>();
 
-		
+
+		//geodeInteractCanvas.SetActive(true);
 	}
 
 	// Update is called once per frame
 	void Update()
 	{
-		for (int i = 0; i < spawnedItems.Count; i++)
+		for (int i = spawnedItems.Count - 1; i >= 0; i--)
         {
-			if (pi.CanStoreItem(spawnedItems[i].GetComponent<Item>()) && (spawnedItems[i].transform.position - pc.transform.position).magnitude < pc.magnetDistance)
+			
+			if (pi.CanStoreItem(spawnedItems[i]) && (spawnedItems[i].transform.position - pc.transform.position).magnitude < pc.magnetDistance)
             {
 				spawnedItems[i].transform.position = Vector3.MoveTowards(spawnedItems[i].transform.position, 
 					pc.transform.position, 
@@ -45,9 +52,8 @@ public class GameManager : MonoBehaviour
 				if ((spawnedItems[i].transform.position - pc.transform.position).magnitude < 1)
                 {
 					//Debug.Log("Collected");
-					pi.CollectItem(spawnedItems[i].GetComponent<Item>());
-					spawnedItems[i].SetActive(false);
-					Destroy(spawnedItems[i]);
+					pi.CollectItem(spawnedItems[i]);
+					Destroy(spawnedItems[i].gameObject);
 					spawnedItems.RemoveAt(i);
                 }
             }
@@ -55,41 +61,58 @@ public class GameManager : MonoBehaviour
 
 		float closestDistance = Mathf.Infinity;
 
-		if (pc.currentInteractible != null)
-        {
-			pc.currentInteractible.interactTextCanvas.SetActive(false);
-        }
 
 		pc.currentInteractible = null;
 
 		List<int> indicesToRemove = new List<int>();
 
-		for (int i = 0;  i < interactables.Count; i++)
+		//List<Chunk> nearbyChunks = mc.GetNearbyChunks();
+		//
+		//for (int c = 0; c < nearbyChunks.Count; c++)
+        //{
+		//	
+		//}
+
+		for (int i = 0; i < interactables.Count; i++)
 		{
-			if (interactables[i] != null)
-            {
+			if (interactables[i] != null && interactables[i].enabled)
+			{
 				float distance = (pc.transform.position - interactables[i].transform.position).magnitude;
-				if (distance < 5
-					)
+				if (distance < 5)
 				{
 					if (distance < closestDistance)
 					{
 						closestDistance = distance;
-						pc.currentInteractible = interactables[i].GetComponent<Interactable>();
-
-						pc.currentInteractible.interactTextCanvas.SetActive(true);
+						pc.currentInteractible = interactables[i];
 					}
 				}
 			}
-            else
-            {
+			else
+			{
 				indicesToRemove.Add(i);
-            }
-			
+			}
+
+		}
+
+		if (pc.currentInteractible != null)
+        {
+			geodeInteractCanvas.enabled = true;
+
+			geodeInteractCanvas.transform.position = pc.currentInteractible.transform.position;
+
+			geodeInteractCanvas.transform.GetChild(0).LookAt(Camera.main.transform);
+			geodeInteractCanvas.transform.GetChild(0).Rotate(0, 180, 0);
         }
-		for (int i = indicesToRemove.Count - 1; i > 0; i--)
+        else
+		{
+			geodeInteractCanvas.enabled = false;
+		}
+
+		
+		for (int i = indicesToRemove.Count - 1; i >= 0; i--)
         {
 			interactables.RemoveAt(indicesToRemove[i]);
+
         }
 	}
 
@@ -97,27 +120,29 @@ public class GameManager : MonoBehaviour
 	{
 		foreach (Vector3Int point in itemsToSpawn.Keys)
 		{
-			if (Random.Range(0, 10) < 3)
+
+			GameObject itemObject = LookupItemObject(itemsToSpawn[point]);
+
+			if ((itemObject.name == "Gold Ore" && Random.Range(0, 10) < 6) || (itemObject.name == "Iron Ore" && Random.Range(0, 10) < 6) || Random.Range(0, 10) < 1)
             {
-				GameObject item = Instantiate(LookupItemObject(itemsToSpawn[point]), point, Quaternion.identity);
-				
 
-				Rigidbody rb;
+				//Rigidbody rb;
+				//
+				//if (item.TryGetComponent<Rigidbody>(out rb))
+				//{
+				//	rb.AddExplosionForce(explosionForce, deformCenter, explosionRadius, explosionForce * 0.1f);
+				//}
 
-				if (item.TryGetComponent<Rigidbody>(out rb))
+
+				spawnedItems.Add(Instantiate(itemObject, point, Quaternion.identity).GetComponent<Item>());
+
+				Item item = itemObject.GetComponent<Item>();
+				if (item.particlePrefab != null)
 				{
-					rb.AddExplosionForce(explosionForce, deformCenter, explosionRadius, explosionForce * 0.1f);
+					GameObject particles = Instantiate(item.particlePrefab, point, Quaternion.identity);
+					Destroy(particles, 2f);
 				}
 
-				spawnedItems.Add(item);
-
-				
-			}
-			Item itemItem = LookupItemObject(itemsToSpawn[point]).GetComponent<Item>();
-			if (itemItem.particlePrefab != null)
-			{
-				GameObject particles = Instantiate(itemItem.particlePrefab, point, Quaternion.identity);
-				Destroy(particles, 2f);
 			}
 
 		}
@@ -151,5 +176,12 @@ public class GameManager : MonoBehaviour
 		}
 
 		return itemIDList[itemID];
+	}
+
+	public void SpawnItem(Item item, Vector3 position)
+    {
+		GameObject itemObj = Instantiate(item.prefab, position, Random.rotation);
+		spawnedItems.Add(itemObj.GetComponent<Item>());
+
 	}
 }

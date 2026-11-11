@@ -36,12 +36,16 @@ public class PlayerInventory : MonoBehaviour
 	public TwoBoneIKConstraint leftIK;
 	public TwoBoneIKConstraint rightIK;
 
+	PlayerController pc;
+
 	Item draggedItem;
 
 	bool isUsingSecondary;
 
 	void Start()
 	{
+		pc = GetComponent<PlayerController>();
+
 		for (int i = 0; i < 18; i++)
 		{
 			inventoryList.Add(null);
@@ -75,7 +79,6 @@ public class PlayerInventory : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
-		
 	}
 
 	void UpdateToolSprites()
@@ -250,7 +253,7 @@ public class PlayerInventory : MonoBehaviour
 				}
 			}
 		}
-		rigBuilder.Build();
+		//rigBuilder.Build();
 		
 	}
 
@@ -286,7 +289,7 @@ public class PlayerInventory : MonoBehaviour
             {
 				return true;
             }
-			if (inventoryList[i] != null && item.id == inventoryList[i].id && inventoryList[i].amountHeld < inventoryList[i].maxStack)
+			else if ( item.id == inventoryList[i].id && inventoryList[i].amountHeld < inventoryList[i].maxStack)
             {
 				return true;
             }
@@ -297,7 +300,16 @@ public class PlayerInventory : MonoBehaviour
 	public void CollectItem(Item item)
     {
 		int itemIndex = ContainsItem(item);
-		//Debug.Log(itemIndex);
+
+		if (item.id == 1)
+        {
+			pc.AddTemper(0.025f);
+        }
+		if (item.id == 0)
+		{
+			pc.AddTemper(0.005f);
+		}
+
 		if (itemIndex != -1)
         {
 			inventoryList[itemIndex].amountHeld += 1;
@@ -308,7 +320,9 @@ public class PlayerInventory : MonoBehaviour
 			{
 				if (inventoryList[i] == null)
 				{
-					inventoryList[i] = item;
+					GameObject itemInstance = Instantiate(item.gameObject);
+					inventoryList[i] = itemInstance.GetComponent<Item>();
+					itemInstance.SetActive(false);
 					break;
 				}
 			}

@@ -17,7 +17,7 @@ public class FadeLight : MonoBehaviour
         _light = GetComponent<Light>();
         initialIntensity = _light.intensity;
 
-        timer = time;
+        timer = 0;
     }
 
     // Update is called once per frame
@@ -25,12 +25,12 @@ public class FadeLight : MonoBehaviour
     {
 
 
-        if (timer > 0)
+        if (timer < time)
         {
-            _light.intensity = fadeCurve.Evaluate(1 - timer / time) * initialIntensity;
+            _light.intensity = fadeCurve.Evaluate((timer + Time.deltaTime) / time) * initialIntensity;
         }
 
 
-        timer -= Time.deltaTime;
+        timer += Time.deltaTime;
     }
 }

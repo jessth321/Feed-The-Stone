@@ -43,7 +43,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 11
   m_Type: 2
-  m_Color: {r: 0.064735174, g: 1, b: 0, a: 1}
+  m_Color: {r: 0.8886792, g: 1, b: 0.99335396, a: 1}
   m_Intensity: 0.1
   m_Range: 10
   m_SpotAngle: 30
@@ -271,14 +271,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe44b4c3d0687cf4a92362116a42ef44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  id: 2
+  id: 3
   itemType: 0
-  itemName: Gold Ore
-  description: Shiny
+  itemName: Common Crystal
+  description: Meh
   maxStack: 16
   amountHeld: 1
   itemWeight: 5
-  spriteUI: {fileID: 21300000, guid: 23b468b18dd72b240907fbe0eea04a6f, type: 3}
+  spriteUI: {fileID: 21300000, guid: 60ef76ed445872b4fb5d357c54effa48, type: 3}
   prefab: {fileID: 8552504054707624101}
   particlePrefab: {fileID: 3197316378277922849, guid: 4cb83bd4d1700c74ca1940f369e6d590,
     type: 3}

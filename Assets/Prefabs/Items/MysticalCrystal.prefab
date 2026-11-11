@@ -43,9 +43,9 @@ Light:
   m_Enabled: 1
   serializedVersion: 11
   m_Type: 2
-  m_Color: {r: 0.8537564, g: 0, b: 1, a: 1}
-  m_Intensity: 0.3
-  m_Range: 2
+  m_Color: {r: 1, g: 0, b: 0.737144, a: 1}
+  m_Intensity: 4
+  m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
@@ -152,7 +152,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.35, y: 0.35, z: 0.35}
+  m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 6787414406470874769}
@@ -271,14 +271,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe44b4c3d0687cf4a92362116a42ef44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  id: 2
+  id: 6
   itemType: 0
   itemName: Gold Ore
   description: Shiny
   maxStack: 16
   amountHeld: 1
   itemWeight: 5
-  spriteUI: {fileID: 21300000, guid: 23b468b18dd72b240907fbe0eea04a6f, type: 3}
+  spriteUI: {fileID: 21300000, guid: 66ae3e42c6d0e9e468c3068638d04e63, type: 3}
   prefab: {fileID: 8552504054707624101}
   particlePrefab: {fileID: 3197316378277922849, guid: 4cb83bd4d1700c74ca1940f369e6d590,
     type: 3}
